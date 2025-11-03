@@ -65,6 +65,18 @@ h2 {
     display: none;
 }
 
+/* 先月の記録エリア */
+#last-month-log {
+    margin-top: 20px;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 5px;
+}
+#log-content {
+    white-space: pre-wrap; /* 長い行でも折り返す */
+    font-size: 0.9em;
+}
 
 #stats p {
     font-size: 1.1em;
