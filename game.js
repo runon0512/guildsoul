@@ -131,7 +131,7 @@ let quests = [
     { id: 63, name: "辺境伯からの密命", reward: 480, difficulty: 200, available: true, requiredRank: 'A', aptitudes: { combat: 40, magic: '無関係', exploration: 75 } },
 
     // Sランク以上
-    { id: 71, name: "エンシェントドラゴンの討伐", reward: 1000, difficulty: 300, available: true, requiredRank: 'S', aptitudes: { combat: 100, magic: 750, exploration: 50 } },
+    { id: 71, name: "エンシェントドラゴンの討伐", reward: 1000, difficulty: 300, available: true, requiredRank: 'S', aptitudes: { combat: 100, magic: 75, exploration: 50 } },
     { id: 72, name: "魔王軍幹部の暗殺", reward: 900, difficulty: 280, available: true, requiredRank: 'S', aptitudes: { combat: 90, magic: '無関係', exploration: 80 } },
     { id: 73, name: "失われた王国の秘宝探索", reward: 800, difficulty: 260, available: true, requiredRank: 'S', aptitudes: { combat: 50, magic: 80, exploration: 90 } },
 
@@ -168,18 +168,26 @@ const tutorialText = document.getElementById('tutorial-text');
  * @param {string} rank - 冒険者のランク
  * @returns {string} CSSカラーコード
  */
-function getRankColor(rank) {
-    switch(rank) {
-        case 'S': return '#FFD700'; // Gold
-        case 'A': return '#FF4500'; // Orangered
-        case 'B': return '#9400D3'; // DarkViolet
-        case 'C': return '#00BFFF'; // DeepSkyBlue
-        case 'D': return '#32CD32'; // LimeGreen
-        case 'E': return '#A9A9A9'; // DarkGray
-        case 'F': return '#A0522D'; // Sienna
-        case 'G': return '#696969'; // DimGray
-        default: return 'inherit';
+function getStyledRankHtml(rank) {
+    let color = 'inherit';
+    let textShadow = 'none';
+
+    if (rank.startsWith('X') || rank === 'V') {
+        color = '#ff00ff'; // Magenta for X ranks
+        textShadow = '0 0 5px #ff00ff, 0 0 8px #ff00ff';
+    } else {
+        switch(rank) {
+            case 'S': color = '#FFD700'; textShadow = '0 0 5px #FFD700'; break; // Gold with glow
+            case 'A': color = '#FF4500'; break; // Orangered
+            case 'B': color = '#9400D3'; break; // DarkViolet
+            case 'C': color = '#00BFFF'; break; // DeepSkyBlue
+            case 'D': color = '#32CD32'; break; // LimeGreen
+            case 'E': color = '#A9A9A9'; break; // DarkGray
+            case 'F': color = '#A0522D'; break; // Sienna
+            case 'G': color = '#696969'; break; // DimGray
+        }
     }
+    return `<span class="adventurer-rank" style="color: ${color}; font-weight: bold; text-shadow: ${textShadow};">${rank}</span>`;
 }
 
 /**
@@ -190,8 +198,6 @@ function getRankColor(rank) {
 function getStyledSkillHtml(skillValue) {
     if (skillValue > 150) {
         return `<span style="color: #00BFFF; font-weight: bold; text-shadow: 0 0 5px #00BFFF;">${skillValue}</span>`;
-    } else if (skillValue > 100) {
-        return `<span style="color: red; font-weight: bold;">${skillValue}</span>`;
     } else if (skillValue > 80) {
         return `<span style="color: orange;">${skillValue}</span>`;
     } else {
@@ -573,17 +579,13 @@ function renderAdventurerList() {
             `;
         }
 
-        // ★ ランクの色を取得
-        const rankColor = getRankColor(adv.rank);
-
         // ★ 表示用の年俸を「月給 x 12」で再計算
         const monthlySalary = Math.ceil(adv.annualSalary / 12);
         const displayedAnnualSalary = monthlySalary * 12;
 
         row.innerHTML = `
-            <td>${adv.name}</td>
-            <td>${adv.gender}/${adv.age}歳</td>
-            <td><span class="adventurer-rank" style="color: ${rankColor}; font-weight: bold;">${adv.rank}</span></td>
+            <td>${adv.name}</td><td>${adv.gender}/${adv.age}歳</td>
+            <td>${getStyledRankHtml(adv.rank)}</td>
             <td>${adv.ovr}</td>
             <td>${getStyledSkillHtml(adv.skills.combat)}</td>
             <td>${getStyledSkillHtml(adv.skills.magic)}</td>
@@ -1259,13 +1261,10 @@ function showQuestSelection(questId, targetAdvId = null) {
         // 昇級試験の場合はチェックボックスを強制的にチェック済み・無効化
         const checked = quest.isPromotion ? 'checked disabled' : '';
 
-        // ★ ランクの色を取得
-        const rankColor = getRankColor(adv.rank);
-
         row.innerHTML = `
             <td><input type="checkbox" name="quest-adv-select" value="${adv.id}" ${checked}></td>
             <td>${adv.name}</td>
-            <td><span class="adventurer-rank" style="color: ${rankColor}; font-weight: bold;">${adv.rank}</span></td>
+            <td>${getStyledRankHtml(adv.rank)}</td>
             <td>${adv.ovr}</td>
             <td>${getStyledSkillHtml(adv.skills.combat)}</td>
             <td>${getStyledSkillHtml(adv.skills.magic)}</td>
@@ -1812,13 +1811,11 @@ function showGameOverScreen() {
     const sortedRecords = Object.values(allTimeAdventurers).sort((a, b) => b.peakOvr - a.peakOvr);
 
     sortedRecords.forEach(record => {
-        const rankColor = getRankColor(record.peakRank);
         const row = table.insertRow();
         row.innerHTML = `
             <tr>
                 <td>${record.name}</td>
-                <td>${record.gender}</td>
-                <td><span class="adventurer-rank" style="color: ${rankColor}; font-weight: bold;">${record.peakRank}</span></td>
+                <td>${record.gender}</td><td>${getStyledRankHtml(record.peakRank)}</td>
                 <td>${record.peakOvr}</td>
                 <td>${record.peakSkills.combat}</td>
                 <td>${record.peakSkills.magic}</td>
@@ -1979,11 +1976,13 @@ function showTutorialStep(step) {
  * @param {boolean} withTutorial - チュートリアルを実行するかどうか
  */
 function startGame(withTutorial) {
-    document.getElementById('home-screen').style.display = 'none';
-    document.getElementById('game-container').style.display = 'block';
+    const homeScreen = document.getElementById('home-screen');
+    const gameContainer = document.getElementById('game-container');
 
-    // ゲーム状態をリセット（必要に応じて）
-    // ここではグローバル変数を初期値に戻す
+    if (homeScreen) homeScreen.style.display = 'none';
+    if (gameContainer) gameContainer.style.display = 'block';
+
+    // ゲーム状態をリセット
     gold = 500;
     adventurers = [];
     scoutCandidates = [];
@@ -2070,12 +2069,11 @@ function renderHallOfFame(records, containerId) {
     const sortedRecords = Object.values(records).sort((a, b) => b.peakOvr - a.peakOvr);
 
     sortedRecords.forEach(record => {
-        const rankColor = getRankColor(record.peakRank);
         const row = table.insertRow();
         row.innerHTML = `
             <td>${record.name}</td><td>${record.gender}</td>
-            <td><span class="adventurer-rank" style="color: ${rankColor}; font-weight: bold;">${record.peakRank}</span></td>
-            <td>${record.peakOvr}</td><td>${record.peakSkills.combat}</td><td>${record.peakSkills.magic}</td>
+            <td>${getStyledRankHtml(record.peakRank)}</td><td>${record.peakOvr}</td>
+            <td>${record.peakSkills.combat}</td><td>${record.peakSkills.magic}</td>
             <td>${record.peakSkills.exploration}</td><td>${record.peakAge}歳</td>
             <td>${SCOUT_POLICIES[record.recruitedBy]?.name || '不明'}</td><td><button onclick="removeFromHallOfFame(${record.id})">削除</button></td>
         `;
