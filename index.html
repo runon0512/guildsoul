@@ -20,10 +20,14 @@
 
         <div id="game-container" style="display: none;">
             <div id="time-controls" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 10px; background: #f0f0f0;">
-                <p style="font-size: 1.2em; margin: 0;">🗓️ 現在の月: <strong id="month">1年目の 1月</strong></p>
-                <button onclick="nextMonth()" style="padding: 10px 20px; font-weight: bold; background-color: #4CAF50; color: white; border: none; cursor: pointer;">
-                    ▶️ Next Month
-                </button>
+                <div>
+                    <p style="font-size: 1.2em; margin: 0;">🗓️ 現在の月: <strong id="month">1年目の 1月</strong></p>
+                </div>
+                <div>
+                    <button onclick="showSaveLoadModal('save')">セーブ</button>
+                    <button onclick="showSaveLoadModal('load')">ロード</button>
+                    <button onclick="nextMonth()" class="next-month-button">▶️ Next Month</button>
+                </div>
             </div>
             
             <div id="last-month-log" style="display: none;">
@@ -83,6 +87,20 @@
             <button id="tutorial-next-button" style="display: none;" onclick="advanceTutorial()">次へ</button>
         </div>
     </div>
+
+    <!-- セーブ/ロード用モーダル -->
+    <div id="save-load-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <h2 id="save-load-title">セーブ/ロード</h2>
+            <div id="save-load-slots">
+                <!-- スロットはJSで動的に生成されます -->
+            </div>
+            <div style="text-align: center; margin-top: 20px;">
+                <button onclick="closeSaveLoadModal()">閉じる</button>
+            </div>
+        </div>
+    </div>
+
     <script src="game.js"></script>
 </body>
 </html>
