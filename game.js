@@ -161,6 +161,10 @@ const logContentEl = document.getElementById('log-content');
 const tutorialOverlay = document.getElementById('tutorial-overlay');
 const tutorialText = document.getElementById('tutorial-text');
 
+// --- セーブ/ロード用DOM要素 ---
+const saveLoadModal = document.getElementById('save-load-modal');
+const saveLoadSlots = document.getElementById('save-load-slots');
+
 // --- ユーティリティ関数 ---
 
 /**
@@ -223,6 +227,7 @@ function updateAllTimeRecord(adv) {
             peakAge: adv.age,
             recruitedBy: adv.recruitedBy,
             peakSkills: { ...adv.skills },
+            characterColor: adv.characterColor, // ★ カラー情報を追加
         };
     } else {
         // 既存冒険者の最高記録更新チェック
@@ -234,6 +239,7 @@ function updateAllTimeRecord(adv) {
             record.peakSkills = { ...adv.skills };
             // 名前が変更されている可能性も考慮
             record.name = adv.name;
+            record.characterColor = adv.characterColor; // ★ カラー情報を更新
         }
     }
 }
@@ -391,7 +397,8 @@ const namesFemale = [
         joinCost: joinCost,
         annualSalary: annualSalary,
         exp: 0, 
-        expToLevelUp: 100 // ★ 経験値を100に固定
+        expToLevelUp: 100, // ★ 経験値を100に固定
+        characterColor: '#cccccc' // ★ キャラクターカラーの初期値
     };
 }
 
@@ -575,6 +582,7 @@ function renderAdventurerList() {
             // ★ 待機中の冒険者に「名前変更」ボタンを追加
             actionButtons = `
                 <button onclick="renameAdventurer(${adv.id})">名前変更</button>
+                <button onclick="showColorPalette(${adv.id})">カラー変更</button>
                 <button class="retire-button" onclick="retireAdventurer(${adv.id})">引退</button>
             `;
         }
@@ -584,7 +592,7 @@ function renderAdventurerList() {
         const displayedAnnualSalary = monthlySalary * 12;
 
         row.innerHTML = `
-            <td>${adv.name}</td><td>${adv.gender}/${adv.age}歳</td>
+            <td><span class="adventurer-name" style="border-bottom: 3px solid ${adv.characterColor || '#ccc'}; padding-bottom: 2px;">${adv.name}</span></td><td>${adv.gender}/${adv.age}歳</td>
             <td>${getStyledRankHtml(adv.rank)}</td>
             <td>${adv.ovr}</td>
             <td>${getStyledSkillHtml(adv.skills.combat)}</td>
@@ -693,6 +701,70 @@ function renameAdventurer(advId) {
     updateDisplay();
 }
 
+/**
+ * 指定した冒険者のためのカラーパレットを表示します。
+ * @param {number} advId - 冒険者のID
+ */
+function showColorPalette(advId) {
+    const adv = adventurers.find(a => a.id === advId);
+    if (!adv) return;
+
+    // 既存のパレットがあれば削除
+    const existingPalette = document.getElementById('color-palette-modal');
+    if (existingPalette) {
+        existingPalette.remove();
+    }
+
+    const paletteModal = document.createElement('div');
+    paletteModal.id = 'color-palette-modal';
+    paletteModal.className = 'modal-overlay';
+
+    const paletteContent = document.createElement('div');
+    paletteContent.className = 'modal-content';
+
+    paletteContent.innerHTML = `<h3>${adv.name} のカラーを選択</h3>`;
+
+    const colorPickerContainer = document.createElement('div');
+    colorPickerContainer.className = 'color-picker-container';
+
+    // カラーピッカーのinput要素を作成
+    const colorInput = document.createElement('input');
+    colorInput.type = 'color';
+    colorInput.id = 'adv-color-picker';
+    colorInput.value = adv.characterColor || '#cccccc'; // 現在の色を初期値として設定
+
+    // ラベルを作成
+    const colorLabel = document.createElement('label');
+    colorLabel.htmlFor = 'adv-color-picker';
+    colorLabel.textContent = '色を自由に選択してください:';
+
+    // 決定ボタンを作成
+    const confirmButton = document.createElement('button');
+    confirmButton.textContent = '決定';
+    confirmButton.className = 'color-picker-confirm-button';
+    confirmButton.onclick = () => {
+        adv.characterColor = colorInput.value;
+        updateAllTimeRecord(adv); // 念のため最高記録も更新
+        updateDisplay();
+        paletteModal.remove();
+    };
+
+    colorPickerContainer.appendChild(colorLabel);
+    colorPickerContainer.appendChild(colorInput);
+
+    paletteContent.appendChild(colorPickerContainer);
+    paletteContent.appendChild(confirmButton);
+
+    paletteModal.appendChild(paletteContent);
+    document.body.appendChild(paletteModal);
+
+    // モーダルの外側をクリックしたら閉じる
+    paletteModal.onclick = (e) => {
+        if (e.target === paletteModal) {
+            paletteModal.remove();
+        }
+    };
+}
 /**
  * 冒険者を引退させます。退職金として、その年の残りの月数分の給与を支払います。
  * @param {number} advId - 冒険者のID
@@ -1263,7 +1335,7 @@ function showQuestSelection(questId, targetAdvId = null) {
 
         row.innerHTML = `
             <td><input type="checkbox" name="quest-adv-select" value="${adv.id}" ${checked}></td>
-            <td>${adv.name}</td>
+            <td><span class="adventurer-name" style="border-bottom: 3px solid ${adv.characterColor || '#ccc'}; padding-bottom: 2px;">${adv.name}</span></td>
             <td>${getStyledRankHtml(adv.rank)}</td>
             <td>${adv.ovr}</td>
             <td>${getStyledSkillHtml(adv.skills.combat)}</td>
@@ -1814,7 +1886,7 @@ function showGameOverScreen() {
         const row = table.insertRow();
         row.innerHTML = `
             <tr>
-                <td>${record.name}</td>
+                <td><span class="adventurer-name" style="border-bottom: 3px solid ${record.characterColor || '#ccc'}; padding-bottom: 2px;">${record.name}</span></td>
                 <td>${record.gender}</td><td>${getStyledRankHtml(record.peakRank)}</td>
                 <td>${record.peakOvr}</td>
                 <td>${record.peakSkills.combat}</td>
@@ -2071,7 +2143,7 @@ function renderHallOfFame(records, containerId) {
     sortedRecords.forEach(record => {
         const row = table.insertRow();
         row.innerHTML = `
-            <td>${record.name}</td><td>${record.gender}</td>
+            <td><span class="adventurer-name" style="border-bottom: 3px solid ${record.characterColor || '#ccc'}; padding-bottom: 2px;">${record.name}</span></td><td>${record.gender}</td>
             <td>${getStyledRankHtml(record.peakRank)}</td><td>${record.peakOvr}</td>
             <td>${record.peakSkills.combat}</td><td>${record.peakSkills.magic}</td>
             <td>${record.peakSkills.exploration}</td><td>${record.peakAge}歳</td>
@@ -2080,6 +2152,126 @@ function renderHallOfFame(records, containerId) {
     });
 
     container.appendChild(table);
+}
+
+// --- セーブ/ロード機能 ---
+
+/**
+ * 現在のゲーム状態をオブジェクトとして取得します。
+ * @returns {Object} ゲーム状態オブジェクト
+ */
+function getGameState() {
+    return {
+        gold,
+        adventurers,
+        scoutCandidates,
+        scoutSkill,
+        questsInProgress,
+        nextAdventurerId,
+        currentMonth,
+        currentYear,
+        allTimeAdventurers,
+        quests: quests.map(q => ({ id: q.id, available: q.available })), // クエストの利用可能状態のみ保存
+        saveDate: new Date().toLocaleString('ja-JP')
+    };
+}
+
+/**
+ * 指定されたゲーム状態オブジェクトからゲームを復元します。
+ * @param {Object} gameState - ゲーム状態オブジェクト
+ */
+function loadGameState(gameState) {
+    gold = gameState.gold;
+    adventurers = gameState.adventurers;
+    scoutCandidates = gameState.scoutCandidates;
+    scoutSkill = gameState.scoutSkill;
+    questsInProgress = gameState.questsInProgress;
+    nextAdventurerId = gameState.nextAdventurerId;
+    currentMonth = gameState.currentMonth;
+    currentYear = gameState.currentYear;
+    allTimeAdventurers = gameState.allTimeAdventurers;
+
+    // クエストの利用可能状態を復元
+    gameState.quests.forEach(savedQuest => {
+        const quest = quests.find(q => q.id === savedQuest.id);
+        if (quest) {
+            quest.available = savedQuest.available;
+        }
+    });
+
+    // UIを全て更新
+    updateDisplay();
+    cancelScout();
+    cancelQuestSelection();
+    alert('ゲームデータをロードしました。');
+}
+
+/**
+ * セーブ/ロード用のモーダルウィンドウを表示します。
+ * @param {'save' | 'load'} mode - 'save' または 'load'
+ */
+function showSaveLoadModal(mode) {
+    saveLoadSlots.innerHTML = '';
+    const title = mode === 'save' ? 'セーブするスロットを選択' : 'ロードするスロットを選択';
+    document.getElementById('save-load-title').textContent = title;
+
+    for (let i = 1; i <= 3; i++) {
+        const slotKey = `guildSoulSaveSlot${i}`;
+        const savedData = JSON.parse(localStorage.getItem(slotKey) || 'null');
+
+        const slotDiv = document.createElement('div');
+        slotDiv.className = 'save-slot';
+
+        let slotInfo = `<p><strong>スロット ${i}</strong></p>`;
+        if (savedData) {
+            slotInfo += `
+                <p>${savedData.currentYear}年 ${savedData.currentMonth}月</p>
+                <p>所持金: ${savedData.gold}万G</p>
+                <p>保存日時: ${savedData.saveDate}</p>
+            `;
+        } else {
+            slotInfo += '<p>空きスロット</p>';
+        }
+
+        const actionButton = document.createElement('button');
+        if (mode === 'save') {
+            actionButton.textContent = savedData ? '上書き保存' : 'セーブ';
+            actionButton.onclick = () => saveGame(i);
+        } else {
+            actionButton.textContent = 'ロード';
+            actionButton.disabled = !savedData;
+            actionButton.onclick = () => loadGame(i);
+        }
+
+        slotDiv.innerHTML = slotInfo;
+        slotDiv.appendChild(actionButton);
+        saveLoadSlots.appendChild(slotDiv);
+    }
+
+    saveLoadModal.style.display = 'flex';
+}
+
+function closeSaveLoadModal() {
+    saveLoadModal.style.display = 'none';
+}
+
+function saveGame(slot) {
+    if (!confirm(`スロット${slot}に現在のゲームデータをセーブしますか？`)) return;
+    const gameState = getGameState();
+    localStorage.setItem(`guildSoulSaveSlot${slot}`, JSON.stringify(gameState));
+    alert(`スロット${slot}にセーブしました。`);
+    closeSaveLoadModal();
+}
+
+function loadGame(slot) {
+    const savedData = localStorage.getItem(`guildSoulSaveSlot${slot}`);
+    if (savedData) {
+        if (!confirm(`スロット${slot}のデータをロードしますか？\n現在のゲーム内容は失われます。`)) return;
+        loadGameState(JSON.parse(savedData));
+        closeSaveLoadModal();
+    } else {
+        alert('このスロットにはセーブデータがありません。');
+    }
 }
 
 // --- 初期化 ---
