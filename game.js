@@ -1703,6 +1703,9 @@ function nextMonth() {
     let summaryMessage = `【${previousYear}年 ${previousMonth}月の収支報告】\n\n`;
     let totalIncome = 0;
     let totalExpense = 0;
+
+    // ★ この月にストーリー任務が実行されたかどうかのフラグ
+    const wasStoryQuestMonth = questsInProgress.some(qData => qData.quest.isStory);
     
     // 1. 進行中のクエストの結果を処理
     if (questsInProgress.length > 0) {
@@ -1714,9 +1717,9 @@ function nextMonth() {
         summaryMessage += "前月に派遣予定のクエストはありませんでした。\n";
     }
 
-    // 2. 冒険者への給与支払い処理 (12月以外)
+    // 2. 冒険者への給与支払い処理 (ストーリー任務の月は支払わない)
     let monthlySalaryExpense = 0;
-    if (previousMonth !== 12) {
+    if (!wasStoryQuestMonth) {
         monthlySalaryExpense = payMonthlySalary();
         totalExpense += monthlySalaryExpense;
     }
