@@ -12,6 +12,7 @@ let allTimeAdventurers = {}; // ★ ゲームオーバー時のリザルト用�
 let tutorialStep = 0; // 0:off, 1:scout, 2:join, 3:assign, 4:next month
 let isInTutorial = false;
 
+let hasScoutedThisMonth = false; // ★ ハードモードでのスカウト回数制限用
 let selectedDifficulty = 'hard'; // ホーム画面での選択を一時的に保持
 
 // --- 難易度設定 ---
@@ -27,6 +28,91 @@ const DIFFICULTY_SETTINGS = {
         questRewardMultiplier: 1.0
     }
 };
+
+// --- 属性定義 (旧タレント) ---
+const ATTRIBUTES = {
+    // Common
+    fire_c: { name: '炎', rarity: 'Common', color: '#e67e22', description: '炎の力。レベルアップ時、魔法スキルが上昇しやすくなる。', bonus: { magic: 3 } },
+    water_c: { name: '水', rarity: 'Common', color: '#3498db', description: '水の力。レベルアップ時、魔法スキルが上昇しやすくなる。', bonus: { magic: 3 } },
+    ice_c: { name: '氷', rarity: 'Common', color: '#1abc9c', description: '氷の力。レベルアップ時、魔法スキルが上昇しやすくなる。', bonus: { magic: 3 } },
+    lightning_c: { name: '雷', rarity: 'Common', color: '#f1c40f', description: '雷の力。レベルアップ時、魔法スキルが上昇しやすくなる。', bonus: { magic: 3 } },
+    wind_c: { name: '風', rarity: 'Common', color: '#2ecc71', description: '風の力。レベルアップ時、探索スキルが上昇しやすくなる。', bonus: { exploration: 3 } },
+    earth_c: { name: '土', rarity: 'Common', color: '#a0522d', description: '土の力。レベルアップ時、戦闘スキルが上昇しやすくなる。', bonus: { combat: 3 } },
+    light_c: { name: '光', rarity: 'Common', color: '#fdfdfd', description: '光の力。レベルアップ時、全スキルがわずかに上昇しやすくなる。', bonus: { combat: 1, magic: 1, exploration: 1 } },
+    dark_c: { name: '闇', rarity: 'Common', color: '#596275', description: '闇の力。レベルアップ時、全スキルがわずかに上昇しやすくなる。', bonus: { combat: 1, magic: 1, exploration: 1 } },
+    rock_c: { name: '岩', rarity: 'Common', color: '#8395a7', description: '岩の力。レベルアップ時、戦闘スキルが上昇しやすくなる。', bonus: { combat: 3 } },
+    poison_c: { name: '毒', rarity: 'Common', color: '#9b59b6', description: '毒の力。レベルアップ時、魔法スキルが上昇しやすくなる。', bonus: { magic: 3 } },
+
+    // Uncommon
+    fire_uc: { name: '烈火', rarity: 'Uncommon', color: '#d35400', description: '激しい炎の力。レベルアップ時、魔法スキルと戦闘スキルが少し上昇しやすくなる。', bonus: { magic: 2, combat: 2 } },
+    water_uc: { name: '流水', rarity: 'Uncommon', color: '#2980b9', description: '流れる水の力。レベルアップ時、魔法スキルと探索スキルが少し上昇しやすくなる。', bonus: { magic: 2, exploration: 2 } },
+    ice_uc: { name: '氷結', rarity: 'Uncommon', color: '#16a085', description: '万物を凍らせる氷の力。レベルアップ時、魔法スキルが大きく上昇しやすくなる。', bonus: { magic: 4 } },
+    lightning_uc: { name: '電光', rarity: 'Uncommon', color: '#f39c12', description: '素早い雷の力。レベルアップ時、探索スキルと戦闘スキルが少し上昇しやすくなる。', bonus: { exploration: 2, combat: 2 } },
+    wind_uc: { name: '疾風', rarity: 'Uncommon', color: '#27ae60', description: '吹き荒れる風の力。レベルアップ時、探索スキルが大きく上昇しやすくなる。', bonus: { exploration: 4 } },
+    earth_uc: { name: '大地', rarity: 'Uncommon', color: '#8c5a30', description: '揺るぎない大地の力。レベルアップ時、戦闘スキルが大きく上昇しやすくなる。', bonus: { combat: 4 } },
+    light_uc: { name: '聖光', rarity: 'Uncommon', color: '#f7f1e3', description: '聖なる光の力。レベルアップ時、戦闘スキルが少し、魔法スキルと探索スキルがわずかに上昇しやすくなる。', bonus: { combat: 2, magic: 1, exploration: 1 } },
+    dark_uc: { name: '常闇', rarity: 'Uncommon', color: '#3d3d3d', description: '深淵の闇の力。レベルアップ時、魔法スキルが少し、戦闘スキルと探索スキルがわずかに上昇しやすくなる。', bonus: { combat: 1, magic: 2, exploration: 1 } },
+    steel_uc: { name: '鋼', rarity: 'Uncommon', color: '#bdc3c7', description: '鋼の如き力。レベルアップ時、戦闘スキルが大きく上昇しやすくなる。', bonus: { combat: 4 } },
+    crystal_uc: { name: '水晶', rarity: 'Uncommon', color: '#ff00ff', description: '水晶の魔力。レベルアップ時、魔法スキルが大きく上昇しやすくなる。', bonus: { magic: 4 } },
+    beast_uc: { name: '獣', rarity: 'Uncommon', color: '#e58e26', description: '獣の如き力。レベルアップ時、戦闘スキルと探索スキルが少し上昇しやすくなる。', bonus: { combat: 2, exploration: 2 } },
+    spirit_uc: { name: '霊', rarity: 'Uncommon', color: '#a29bfe', description: '霊的な力。レベルアップ時、魔法スキルと探索スキルが少し上昇しやすくなる。', bonus: { magic: 2, exploration: 2 } },
+
+    // Rare
+    blaze_r: { name: '爆炎', rarity: 'Rare', color: '#c0392b', description: 'すべてを焼き尽くす爆炎の力。レベルアップ時、魔法スキルが非常に大きく上昇しやすくなる。', bonus: { magic: 5 } },
+    abyss_r: { name: '深淵', rarity: 'Rare', color: '#8e44ad', description: '深淵の力。レベルアップ時、魔法スキルが上昇しやすく、探索スキルが少し上昇しやすくなる。', bonus: { magic: 3, exploration: 2 } },
+    thunder_r: { name: '轟雷', rarity: 'Rare', color: '#f39c12', description: '天を揺るがす雷の力。レベルアップ時、戦闘スキルが上昇しやすく、魔法スキルが少し上昇しやすくなる。', bonus: { combat: 3, magic: 2 } },
+    vortex_r: { name: '渦潮', rarity: 'Rare', color: '#2980b9', description: '渦巻く潮の力。レベルアップ時、戦闘スキルが上昇しやすく、探索スキルが少し上昇しやすくなる。', bonus: { combat: 3, exploration: 2 } },
+    gale_r: { name: '嵐', rarity: 'Rare', color: '#16a085', description: '荒れ狂う嵐の力。レベルアップ時、探索スキルが非常に大きく上昇しやすくなる。', bonus: { exploration: 5 } },
+    gaea_r: { name: 'ガイア', rarity: 'Rare', color: '#8c5a30', description: '母なる大地の力。レベルアップ時、戦闘スキルが非常に大きく上昇しやすくなる。', bonus: { combat: 5 } },
+    holy_r: { name: '神聖', rarity: 'Rare', color: '#f1c40f', description: '極めて神聖な力。レベルアップ時、戦闘スキルと魔法スキルが少し、探索スキルがわずかに上昇しやすくなる。', bonus: { combat: 2, magic: 2, exploration: 1 } },
+    chaos_r: { name: '混沌', rarity: 'Rare', color: '#7f8c8d', description: '予測不能な混沌の力。レベルアップ時、魔法スキルと探索スキルが少し、戦闘スキルがわずかに上昇しやすくなる。', bonus: { combat: 1, magic: 2, exploration: 2 } },
+    dragon_r: { name: '竜', rarity: 'Rare', color: '#e74c3c', description: '竜の血脈。レベルアップ時、戦闘スキルが上昇しやすく、魔法スキルが少し上昇しやすくなる。', bonus: { combat: 3, magic: 2 } },
+    phantom_r: { name: '幻', rarity: 'Rare', color: '#9b59b6', description: '幻影の力。レベルアップ時、魔法スキルが上昇しやすく、探索スキルが少し上昇しやすくなる。', bonus: { magic: 3, exploration: 2 } },
+    machine_r: { name: '機', rarity: 'Rare', color: '#95a5a6', description: '機械の力。レベルアップ時、戦闘スキルが上昇しやすく、探索スキルが少し上昇しやすくなる。', bonus: { combat: 3, exploration: 2 } },
+    time_r: { name: '時', rarity: 'Rare', color: '#00a8ff', description: '時を操る力。レベルアップ時、戦闘スキルと探索スキルが少し、魔法スキルがわずかに上昇しやすくなる。', bonus: { combat: 2, magic: 1, exploration: 2 } },
+
+    // Epic
+    solar_e: { name: '太陽', rarity: 'Epic', color: '#f39c12', description: '太陽の化身。レベルアップ時、戦闘スキルが上昇しやすく、魔法スキルと探索スキルが少し上昇しやすくなる。', bonus: { combat: 3, magic: 2, exploration: 2 } },
+    lunar_e: { name: '月', rarity: 'Epic', color: '#ecf0f1', description: '月の化身。レベルアップ時、魔法スキルが上昇しやすく、戦闘スキルと探索スキルが少し上昇しやすくなる。', bonus: { combat: 2, magic: 3, exploration: 2 } },
+    cosmo_e: { name: '星', rarity: 'Epic', color: '#4a69bd', description: '星々の導き。レベルアップ時、探索スキルが上昇しやすく、戦闘スキルと魔法スキルが少し上昇しやすくなる。', bonus: { combat: 2, magic: 2, exploration: 3 } },
+    void_e: { name: '虚無', rarity: 'Epic', color: '#2c3e50', description: 'すべてを無に帰す力。レベルアップ時、ランダムな1つのスキルが爆発的に上昇しやすくなる。', bonus: { random: 7 } },
+    genesis_e: { name: '創生', rarity: 'Epic', color: '#ffffff', description: '世界を創る力。レベルアップ時、戦闘スキルが上昇しやすく、魔法スキルと探索スキルが少し上昇しやすくなる。', bonus: { combat: 3, magic: 2, exploration: 2 } },
+    omega_e: { name: '終焉', rarity: 'Epic', color: '#c0392b', description: '世界を終わらせる力。レベルアップ時、魔法スキルが上昇しやすく、戦闘スキルと探索スキルが少し上昇しやすくなる。', bonus: { combat: 2, magic: 3, exploration: 2 } },
+    miracle_e: { name: '奇跡', rarity: 'Epic', color: '#fd79a8', description: '奇跡を呼ぶ力。レベルアップ時、最も低いスキルが爆発的に上昇しやすくなる。', bonus: { lowest: 7 } },
+};
+
+/**
+ * 冒険者が持つ特性の効果を取得します。
+ * @param {Object} adv - 冒険者オブジェクト
+ * @param {string} effectName - 取得したい効果の名前 (e.g., 'expModifier')
+ * @param {*} defaultValue - 効果が存在しない場合のデフォルト値
+ * @returns {*} 効果の値
+ */
+function getTraitEffect(adv, effectName, defaultValue) {
+    return defaultValue; // 旧特性システムは廃止
+}
+
+/**
+ * 指定された16進数の色コードに対して、コントラストが最も高くなる色（黒または白）を返します。
+ * @param {string} hexColor - '#'で始まる16進数の色コード (例: '#e67e22')
+ * @returns {string} '#000000' (黒) または '#ffffff' (白)
+ */
+function getContrastColor(hexColor) {
+    if (!hexColor) return '#000000'; // フォールバック
+
+    // '#'を取り除き、6桁の16進数に正規化
+    const hex = hexColor.slice(1);
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+
+    // YIQ式を用いて輝度を計算
+    const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+
+    // 輝度に基づいて黒か白かを決定（閾値は128）
+    return (yiq >= 128) ? '#000000' : '#ffffff';
+}
+
 
 
 // --- ランク定義 ---
@@ -93,8 +179,8 @@ const SCOUT_POLICIES = {
     growth: { 
         name: "成長重視",
         minAge: 18, 
-        maxAge: 20, 
-        baseBonus: -3, 
+        maxAge: 18, 
+        baseBonus: -5, 
         limit: 10, 
         maxJoin: Infinity 
     },
@@ -260,8 +346,8 @@ function updateAllTimeRecord(adv) {
             id: adv.id,
             name: adv.name,
             gender: adv.gender,
-            peakOvr: adv.ovr,
-            peakRank: adv.rank,
+            peakOvr: adv.ovr, peakRank: adv.rank,
+            attribute: adv.attribute,
             peakAge: adv.age,
             recruitedBy: adv.recruitedBy,
             peakSkills: { ...adv.skills },
@@ -275,6 +361,7 @@ function updateAllTimeRecord(adv) {
             record.peakRank = adv.rank;
             record.peakAge = adv.age;
             record.peakSkills = { ...adv.skills };
+            record.attribute = adv.attribute;
             // 名前が変更されている可能性も考慮
             record.name = adv.name;
             record.characterColor = adv.characterColor; // ★ カラー情報を更新
@@ -347,6 +434,18 @@ function calculateBaseValue(age, baseBonus = 0) {
 
 // ランダムな冒険者のデータを生成 (名前リストは省略せず全文記載)
 function generateAdventurer(baseBonus, policyKey) { 
+    // --- 新しい属性とスキルの生成ロジック ---
+    // 1. 属性をレア度に基づいて決定
+    const rand = Math.random();
+    let rarity;
+    if (rand < 0.02) rarity = 'Epic';       // 2%
+    else if (rand < 0.12) rarity = 'Rare';  // 10%
+    else if (rand < 0.42) rarity = 'Uncommon'; // 30%
+    else rarity = 'Common';                 // 58%
+
+    const possibleAttributes = Object.keys(ATTRIBUTES).filter(key => ATTRIBUTES[key].rarity === rarity);
+    const selectedAttributeKey = possibleAttributes[Math.floor(Math.random() * possibleAttributes.length)];
+
     // ★★★ 冒険者名の生成ロジックを修正/確定 ★★★
     const minAge = 17; 
     const maxAge = 60;
@@ -424,6 +523,7 @@ const namesFemale = [
         gender: selectedGender,
         recruitedBy: policyKey,
         age: age,
+        attribute: selectedAttributeKey,
         status: '待機中',
         rank: 'G', // ランクを初期値Gとして追加
         skills: {
@@ -440,7 +540,7 @@ const namesFemale = [
     };
 }
 
-/**
+/** 
  * 冒険者の年齢に基づき、獲得経験値の倍率を返します。
  * @param {number} age - 冒険者の年齢
  * @returns {number} 経験値倍率
@@ -519,18 +619,42 @@ function calculateQuestEXP(successRate) {
  * @param {Object} adv - 冒険者オブジェクト
  */
 function levelUp(adv) {
-    // ★ 経験値の上限を100に固定し、超過分を次のレベルに持ち越す
-    adv.exp = adv.exp - 100;
-    adv.expToLevelUp = 100; // ★ 経験値MAXを100で固定
-    
-    const skills = ['combat', 'magic', 'exploration'];
+    adv.exp -= 100;
+    adv.expToLevelUp = 100; // 常に100で固定
+
+    const skillKeys = ['combat', 'magic', 'exploration'];
     let levelUpMessage = adv.name + " がレベルアップ！ スキル上昇: ";
     let totalIncrease = 0;
-    
-    for (const skill of skills) {
-        // 2から3のランダムな値 (Math.floor(Math.random() * (max - min + 1)) + min)
-        const skillIncrease = Math.floor(Math.random() * 3) + 3; 
-        
+
+    // 1. 基本上昇値 (10-30)
+    const baseIncreases = {
+        combat: (Math.floor(Math.random() * 3) + 1) * 10,
+        magic: (Math.floor(Math.random() * 3) + 1) * 10,
+        exploration: (Math.floor(Math.random() * 3) + 1) * 10,
+    };
+
+    // 2. 属性によるボーナス
+    const attribute = ATTRIBUTES[adv.attribute];
+    if (attribute && attribute.bonus) {
+        if (attribute.bonus.random) {
+            const randomSkill = skillKeys[Math.floor(Math.random() * skillKeys.length)];
+            baseIncreases[randomSkill] += attribute.bonus.random * 10;
+        } else if (attribute.bonus.lowest) {
+            let lowestSkill = 'combat';
+            if (adv.skills.magic < adv.skills[lowestSkill]) lowestSkill = 'magic';
+            if (adv.skills.exploration < adv.skills[lowestSkill]) lowestSkill = 'exploration';
+            baseIncreases[lowestSkill] += attribute.bonus.lowest * 10;
+        } else {
+            for (const skill of skillKeys) {
+                baseIncreases[skill] += (attribute.bonus[skill] || 0) * 10;
+            }
+        }
+    }
+
+    for (const skill of skillKeys) {
+        // 最終的な上昇値を計算し、10で割って元のスケールに戻す
+        const skillIncrease = Math.round(baseIncreases[skill] / 10);
+
         // 最大値133を超えないように、実際の上昇値を計算
         const actualIncrease = Math.min(skillIncrease, 200 - adv.skills[skill]);
         
@@ -561,12 +685,31 @@ function levelUp(adv) {
 // --- 状態の更新と表示 ---
 function updateDisplay() {
     document.getElementById('month').textContent = `${currentYear}年 ${currentMonth}月`;
-    goldEl.textContent = gold;
+    goldEl.textContent = gold.toLocaleString(); // 3桁区切り
     adventurerCountEl.textContent = adventurers.length;
     scoutSkillEl.textContent = scoutSkill;
+    updateScoutButtonCosts(); // ★ スカウトボタンのコスト表示を更新
     renderAdventurerList();
     renderQuests();
-    updateProjectedBalance(); // ★ 予測収支を更新
+}
+
+/**
+ * 現在の難易度に応じて、スカウトボタンに表示されるコストを更新します。
+ */
+function updateScoutButtonCosts() {
+    const scoutSection = document.getElementById('scout-controls');
+    if (!scoutSection) return;
+
+    const costs = DIFFICULTY_SETTINGS[gameDifficulty].scoutCosts;
+
+    const immediateButton = scoutSection.querySelector('button[onclick="scoutAdventurers(\'immediate\')"]');
+    if (immediateButton) immediateButton.textContent = `即戦力重視 (${costs.immediate}万G)`;
+
+    const growthButton = scoutSection.querySelector('button[onclick="scoutAdventurers(\'growth\')"]');
+    if (growthButton) growthButton.textContent = `成長重視 (${costs.growth}万G)`;
+
+    const focusedButton = scoutSection.querySelector('button[onclick="scoutAdventurers(\'focused\')"]');
+    if (focusedButton) focusedButton.textContent = `集中スカウト (${costs.focused}万G)`;
 }
 
 // ★ おすすめ割り当てボタンの表示/非表示を制御
@@ -577,6 +720,46 @@ function updateAutoAssignButtonVisibility() {
     }
 }
 
+/**
+ * 派遣予定の任務に基づいた収支予測を計算し、表示します。
+ * @param {HTMLElement} containerEl - 描画先のコンテナ要素
+ */
+function renderProjectionSummary(containerEl) {
+    if (questsInProgress.length === 0) {
+        containerEl.style.display = 'none';
+        return;
+    }
+
+    let projectedIncome = 0;
+    let projectedSalaryExpense = 0;
+
+    // 1. 派遣予定のクエストからの収入を計算
+    questsInProgress.forEach(qData => {
+        if (!qData.quest.isPromotion && !qData.quest.isStory) {
+            projectedIncome += getQuestReward(qData.quest);
+        }
+    });
+
+    // 2. 月給の支出を計算 (ストーリー任務の月は支払われない)
+    const isStoryQuestMonth = questsInProgress.some(qData => qData.quest.isStory);
+    if (!isStoryQuestMonth) {
+        adventurers.forEach(adv => {
+            projectedSalaryExpense += Math.ceil(adv.annualSalary / 11);
+        });
+    }
+
+    const netChange = projectedIncome - projectedSalaryExpense;
+    const netChangeClass = netChange >= 0 ? 'positive-balance' : 'negative-balance';
+
+    containerEl.innerHTML = `
+        <h4>収支予測 (全成功時)</h4>
+        <p>収入: ${projectedIncome.toLocaleString()} 万G</p>
+        <p>支出: -${projectedSalaryExpense.toLocaleString()} 万G</p>
+        <hr>
+        <p>合計: <span class="${netChangeClass}">${netChange >= 0 ? '+' : ''}${netChange.toLocaleString()} 万G</span></p>
+    `;
+    containerEl.style.display = 'block';
+}
 
 
 // --- 冒険者リストの表示 (キャンセルボタンを追加) ---
@@ -584,18 +767,32 @@ function renderAdventurerList() {
     adventurerListEl.innerHTML = ''; 
 
     if (adventurers.length === 0) {
-        adventurerListEl.innerHTML = '<p>現在、ギルドには誰もいません。</p>';
+        adventurerListEl.innerHTML = '<div class="adventurer-list-wrapper"><p>現在、ギルドには誰もいません。</p></div>';
         return;
     }
 
     // OVRの高い順にソート
     const sortedAdventurers = [...adventurers].sort((a, b) => b.ovr - a.ovr);
 
+    // --- メインコンテナとレイアウトの作成 ---
+    const wrapper = document.createElement('div');
+    wrapper.className = 'adventurer-list-wrapper';
+
+    const tableContainer = document.createElement('div');
+    tableContainer.className = 'adventurer-table-container';
+
+    const projectionContainer = document.createElement('div');
+    projectionContainer.id = 'adventurer-list-projection';
+    projectionContainer.className = 'projection-summary-panel';
+
+    // --- 冒険者テーブルの作成 ---
     const table = document.createElement('table');
+    table.className = 'adventurer-main-table';
     table.innerHTML = `
         <tr>
             <th>名前</th>
             <th>性別/年齢</th>
+            <th>属性</th>
             <th>ランク</th>
             <th>OVR</th>
             <th>戦闘</th>
@@ -638,8 +835,15 @@ function renderAdventurerList() {
         const monthlySalary = Math.ceil(adv.annualSalary / 11);
         const displayedAnnualSalary = monthlySalary * 11;
 
+        // 属性とスキルの表示
+        const attribute = ATTRIBUTES[adv.attribute];
+        const textColor = getContrastColor(attribute?.color);
+        const attributeHtml = attribute ? `<span class="talent-trait rarity-${attribute.rarity.toLowerCase()}" style="background-color: ${attribute.color}; color: ${textColor};" title="${attribute.description}">${attribute.name}</span>` : 'なし';
+
         row.innerHTML = `
-            <td><span class="adventurer-name" style="border-bottom: 3px solid ${adv.characterColor || '#ccc'}; padding-bottom: 2px;">${adv.name}</span></td><td>${adv.gender}/${adv.age}歳</td>
+            <td><span class="adventurer-name" style="border-bottom: 3px solid ${adv.characterColor || '#ccc'}; padding-bottom: 2px;">${adv.name}</span></td>
+            <td>${adv.gender}/${adv.age}歳</td>
+            <td>${attributeHtml}</td>
             <td>${getStyledRankHtml(adv.rank)}</td>
             <td>${adv.ovr}</td>
             <td>${getStyledSkillHtml(adv.skills.combat)}</td>
@@ -656,7 +860,15 @@ function renderAdventurerList() {
             <td>${actionButtons}</td>
         `;
     });
-    adventurerListEl.appendChild(table);
+    tableContainer.appendChild(table);
+
+    // --- 各パーツを組み立て ---
+    wrapper.appendChild(tableContainer);
+    wrapper.appendChild(projectionContainer);
+    adventurerListEl.appendChild(wrapper);
+
+    // --- 収支予測をレンダリング ---
+    renderProjectionSummary(projectionContainer);
 }
 
 /**
@@ -698,7 +910,6 @@ function cancelScheduledQuest(advId, questName) {
     }
     
     alert(`${adv.name} の【${questName}】の派遣予定をキャンセルしました。`);
-    updateProjectedBalance(); // ★ 予測収支を更新
     updateDisplay();
 }
 
@@ -865,6 +1076,12 @@ function scoutAdventurers(policyKey) {
     const policy = SCOUT_POLICIES[policyKey];
     const cost = DIFFICULTY_SETTINGS[gameDifficulty].scoutCosts[policyKey];
 
+    // ★ ハードモードでのスカウト回数制限
+    if (gameDifficulty === 'hard' && hasScoutedThisMonth) {
+        alert('ハードモードでは、スカウトは1ヶ月に1回しか実行できません。');
+        return;
+    }
+
     if (!policy) {
         alert("無効なスカウト方針が選択されました。");
         return;
@@ -881,7 +1098,10 @@ function scoutAdventurers(policyKey) {
         return;
     }
 
-    gold -= policy.cost;
+    // ★ スカウト実行フラグを立てる
+    hasScoutedThisMonth = true;
+
+    gold -= cost;
     scoutCandidates = [];
     
     const baseValueCeiling = calculateBaseValue(30, policy.baseBonus); 
@@ -929,6 +1149,7 @@ function renderScoutCandidates(policyKey) {
             <th>選択</th>
             <th>名前</th>
             <th>性別/年齢</th>
+            <th>属性</th>
             <th>OVR</th>
             <th>戦闘</th>
             <th>魔法</th>
@@ -945,10 +1166,16 @@ function renderScoutCandidates(policyKey) {
         const isOverScoutSkill = candidate.ovr > scoutSkill;
         row.className = isOverScoutSkill ? 'over-skill-highlight' : '';
 
+        // 属性とスキルの表示
+        const attribute = ATTRIBUTES[candidate.attribute];
+        const textColor = getContrastColor(attribute?.color);
+        const attributeHtml = attribute ? `<span class="talent-trait rarity-${attribute.rarity.toLowerCase()}" style="background-color: ${attribute.color}; color: ${textColor};" title="${attribute.description}">${attribute.name}</span>` : 'なし';
+
         row.innerHTML = `
             <td><input type="checkbox" name="candidate" value="${candidate.id}" data-cost="${candidate.joinCost}"></td>
             <td>${candidate.name}</td>
             <td>${candidate.gender}/${candidate.age}歳</td>
+            <td>${attributeHtml}</td>
             <td><span style="font-weight: bold; color: ${isOverScoutSkill ? 'red' : 'inherit'};">${candidate.ovr}</span></td>
             <td>${getStyledSkillHtml(candidate.skills.combat)}</td>
             <td>${getStyledSkillHtml(candidate.skills.magic)}</td>
@@ -1543,7 +1770,6 @@ function autoAssignQuests() {
 
     if (assignedCount > 0) {
         alert(`${assignedCount}人の冒険者に任務を割り当てました。`);
-        updateProjectedBalance(); // ★ 予測収支を更新
         updateDisplay();
     } else {
         alert('条件に合う任務が見つからず、誰も割り当てられませんでした。');
@@ -1601,10 +1827,12 @@ function updateQuestSuccessRate(quest) {
         
         if (selectedIds.includes(adv.id) && selectedAdventurers.length > 0) {
             // 選択されている冒険者の場合
-            const ageMultiplier = getAgeMultiplier(adv.age);
+            const ageMultiplier = getAgeMultiplier(adv.age); // 年齢倍率
             const rankMultiplier = getRankMultiplier(adv.rank); // ★ ランク倍率を追加
-            const totalMultiplier = ageMultiplier * rankMultiplier; // ★ 合計倍率
-            const individualExp = Math.round(gainedBaseExp * totalMultiplier * expModifier); // ★ 合計倍率を適用
+            const traitExpModifier = 1.0; // 旧特性システム廃止のため1.0に固定
+
+            const totalMultiplier = ageMultiplier * rankMultiplier * traitExpModifier; // ★ 合計倍率
+            const individualExp = Math.round(gainedBaseExp * totalMultiplier * expModifier);
             
             // 倍率は小数点第二位まで表示
             expPreviewEl.textContent = `${individualExp} P (x${totalMultiplier.toFixed(2)})`; // ★ 表示も合計倍率に
@@ -1672,7 +1900,6 @@ function sendAdventurersToQuest(questId, isPromotion, targetAdvId = null) {
     cancelQuestSelection();
 
     alert(`【${quest.name}】に${sentAdventurers.length}名の冒険者を派遣予定に入れました！\n結果は「Next Month」で確認できます。`);
-    updateProjectedBalance(); // ★ 予測収支を更新
     updateDisplay();
 }
 
@@ -1685,45 +1912,6 @@ function cancelQuestSelection() {
     questsEl.style.display = 'block'; 
     adventurerListEl.style.display = 'block'; 
     updateDisplay();
-}
-
-/**
- * 全ての任務が成功した場合の予測収支を計算し、表示を更新します。
- */
-function updateProjectedBalance() {
-    const container = document.getElementById('projected-balance-container');
-    if (!container) return;
-
-    if (questsInProgress.length === 0) {
-        container.style.display = 'none';
-        return;
-    }
-
-    let projectedIncome = 0;
-    let projectedSalaryExpense = 0;
-
-    // 1. 派遣予定のクエストからの収入を計算
-    questsInProgress.forEach(qData => {
-        // 昇級試験とストーリー任務は報酬がない
-        if (!qData.quest.isPromotion && !qData.quest.isStory) {
-            projectedIncome += getQuestReward(qData.quest);
-        }
-    });
-
-    // 2. 月給の支出を計算 (ストーリー任務の月は支払われない)
-    const isStoryQuestMonth = questsInProgress.some(qData => qData.quest.isStory);
-    if (!isStoryQuestMonth) {
-        adventurers.forEach(adv => {
-            projectedSalaryExpense += Math.ceil(adv.annualSalary / 11);
-        });
-    }
-
-    const netChange = projectedIncome - projectedSalaryExpense;
-    const netChangeClass = netChange >= 0 ? 'positive-balance' : 'negative-balance';
-
-    container.innerHTML = `
-        <strong>予測収支 (全成功時):</strong> 収入 ${projectedIncome}万 - 支出 ${projectedSalaryExpense}万 = <span class="${netChangeClass}">${netChange >= 0 ? '+' : ''}${netChange}万G</span>`;
-    container.style.display = 'block';
 }
 
 // --- ゲーム進行機能 ---
@@ -1822,6 +2010,9 @@ function nextMonth() {
     // 6. クエストのリセット（全て復活）
     quests.forEach(q => q.available = true);
     
+    // ★ スカウト回数をリセット
+    hasScoutedThisMonth = false;
+
     // 資金不足チェック
     if (gold < 0) {
         showGameOverScreen();
@@ -1865,9 +2056,11 @@ function processQuestsResults() {
         let totalGainedExp = 0;
 
         sentAdventurers.forEach(adv => {
-            const ageMultiplier = getAgeMultiplier(adv.age);
+            const ageMultiplier = getAgeMultiplier(adv.age); // 年齢倍率
             const rankMultiplier = getRankMultiplier(adv.rank); // ★ ランク倍率を追加
-            const totalMultiplier = ageMultiplier * rankMultiplier; // ★ 合計倍率
+            const traitExpModifier = 1.0; // 旧特性システム廃止のため1.0に固定
+
+            const totalMultiplier = ageMultiplier * rankMultiplier * traitExpModifier; // ★ 合計倍率
             const gainedExp = Math.round(gainedBaseExp * totalMultiplier * expModifier); // ★ 合計倍率を適用
 
             totalGainedExp += gainedExp; 
@@ -2081,6 +2274,7 @@ function renderHallOfFameTable(containerId) {
         <tr>
             <th>名前</th>
             <th>性別</th>
+            <th>属性</th>
             <th>最高ランク</th>
             <th>最高OVR</th>
             <th>戦闘</th>
@@ -2097,18 +2291,22 @@ function renderHallOfFameTable(containerId) {
 
     sortedRecords.forEach(record => {
         const row = table.insertRow();
+        
+        // ★ 属性表示用のHTMLを生成
+        const attribute = ATTRIBUTES[record.attribute];
+        const textColor = getContrastColor(attribute?.color);
+        const attributeHtml = attribute ? `<span class="talent-trait rarity-${attribute.rarity.toLowerCase()}" style="background-color: ${attribute.color}; color: ${textColor};" title="${attribute.description}">${attribute.name}</span>` : 'なし';
+
         row.innerHTML = `
-            <tr>
-                <td><span class="adventurer-name" style="border-bottom: 3px solid ${record.characterColor || '#ccc'}; padding-bottom: 2px;">${record.name}</span></td>
-                <td>${record.gender}</td><td>${getStyledRankHtml(record.peakRank)}</td>
-                <td>${record.peakOvr}</td>
-                <td>${record.peakSkills.combat}</td>
-                <td>${record.peakSkills.magic}</td>
-                <td>${record.peakSkills.exploration}</td>
-                <td>${record.peakAge}歳</td>
-                <td>${SCOUT_POLICIES[record.recruitedBy]?.name || '不明'}</td>
-                <td><button id="induct-btn-${record.id}" onclick="inductToHallOfFame(${record.id})">殿堂入り</button></td>
-            </tr>
+            <td><span class="adventurer-name" style="border-bottom: 3px solid ${record.characterColor || '#ccc'}; padding-bottom: 2px;">${record.name}</span></td>
+            <td>${record.gender}</td><td>${attributeHtml}</td><td>${getStyledRankHtml(record.peakRank)}</td>
+            <td>${record.peakOvr}</td>
+            <td>${record.peakSkills.combat}</td>
+            <td>${record.peakSkills.magic}</td>
+            <td>${record.peakSkills.exploration}</td>
+            <td>${record.peakAge}歳</td>
+            <td>${SCOUT_POLICIES[record.recruitedBy]?.name || '不明'}</td>
+            <td><button id="induct-btn-${record.id}" onclick="inductToHallOfFame(${record.id})">殿堂入り</button></td>
         `;
     });
 
@@ -2265,7 +2463,7 @@ function showTutorialStep(step) {
 function startGame(withTutorial, difficulty) {
     const homeScreen = document.getElementById('home-screen');
     const gameContainer = document.getElementById('game-container');
-    gameDifficulty = difficulty;
+    gameDifficulty = selectedDifficulty; // ★ ホーム画面で選択された難易度を反映
     if (homeScreen) homeScreen.style.display = 'none'; // ホーム画面全体を非表示に
     if (gameContainer) gameContainer.style.display = 'block';
 
@@ -2292,7 +2490,7 @@ function startGame(withTutorial, difficulty) {
     if (withTutorial) {
         startTutorial();
     }
-    alert(`難易度「${DIFFICULTY_SETTINGS[difficulty].name}」でゲームを開始します。`);
+    alert(`難易度「${DIFFICULTY_SETTINGS[gameDifficulty].name}」でゲームを開始します。`);
 }
 
 /**
@@ -2349,8 +2547,7 @@ function renderHallOfFame(records, containerId) {
     
     const table = document.createElement('table');
     table.innerHTML = `
-        <tr>
-            <th>名前</th><th>性別</th><th>最高ランク</th><th>最高OVR</th>
+        <tr><th>名前</th><th>性別</th><th>属性</th><th>最高ランク</th><th>最高OVR</th>
             <th>戦闘</th><th>魔法</th><th>探索</th><th>達成年齢</th><th>獲得方法</th><th>操作</th>
         </tr>
     `;
@@ -2359,12 +2556,18 @@ function renderHallOfFame(records, containerId) {
 
     sortedRecords.forEach(record => {
         const row = table.insertRow();
+        
+        // ★ 属性表示用のHTMLを生成
+        const attribute = ATTRIBUTES[record.attribute];
+        const textColor = getContrastColor(attribute?.color);
+        const attributeHtml = attribute ? `<span class="talent-trait rarity-${attribute.rarity.toLowerCase()}" style="background-color: ${attribute.color}; color: ${textColor};" title="${attribute.description}">${attribute.name}</span>` : 'なし';
+
         row.innerHTML = `
-            <td><span class="adventurer-name" style="border-bottom: 3px solid ${record.characterColor || '#ccc'}; padding-bottom: 2px;">${record.name}</span></td><td>${record.gender}</td>
-            <td>${getStyledRankHtml(record.peakRank)}</td><td>${record.peakOvr}</td>
-            <td>${record.peakSkills.combat}</td><td>${record.peakSkills.magic}</td>
-            <td>${record.peakSkills.exploration}</td><td>${record.peakAge}歳</td>
-            <td>${SCOUT_POLICIES[record.recruitedBy]?.name || '不明'}</td><td><button onclick="removeFromHallOfFame(${record.id})">削除</button></td>
+            <td><span class="adventurer-name" style="border-bottom: 3px solid ${record.characterColor || '#ccc'}; padding-bottom: 2px;">${record.name}</span></td><td>${record.gender}</td><td>${attributeHtml}</td><td>${getStyledRankHtml(record.peakRank)}</td>
+            <td>${record.peakOvr}</td><td>${record.peakSkills.combat}</td>
+            <td>${record.peakSkills.magic}</td><td>${record.peakSkills.exploration}</td>
+            <td>${record.peakAge}歳</td><td>${SCOUT_POLICIES[record.recruitedBy]?.name || '不明'}</td>
+            <td><button onclick="removeFromHallOfFame(${record.id})">削除</button></td>
         `;
     });
 
@@ -2608,6 +2811,56 @@ function renderStylishHomeScreen() {
             transform: translateY(-3px);
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
+        .talent-trait {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 4px; /* 背景色とテキスト色は動的に設定 */
+            font-size: 0.8em;
+            margin: 1px;
+            border: 1px solid #888;
+        }
+        .rarity-common {
+            /* No special effect */
+        }
+        .rarity-uncommon {
+            text-shadow: 0 0 4px currentColor; /* 多少輝く */
+        }
+        .rarity-rare {
+            font-weight: bold;
+            background-image: linear-gradient(to bottom, rgba(255,255,255,0.2), rgba(0,0,0,0.2));
+            text-shadow: 0 0 8px currentColor; /* より輝く */
+        }
+        .rarity-epic {
+            font-weight: bold;
+            background: linear-gradient(135deg, #c0392b, #8e44ad, #2c3e50); /* エフェクト */
+            text-shadow: 0 0 3px #fff, 0 0 8px currentColor, 0 0 12px currentColor; /* 強い輝き */
+            border-color: #f1c40f;
+        }
+        .adventurer-list-wrapper {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+        }
+        .adventurer-table-container {
+            flex-grow: 1;
+        }
+        .projection-summary-panel {
+            width: 280px;
+            flex-shrink: 0;
+            background-color: #34495e;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #7f8c8d;
+        }
+        .projection-summary-panel h4 {
+            margin-top: 0;
+            border-bottom: 1px solid #7f8c8d;
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+        }
+        .positive-balance { color: #2ecc71; }
+        .negative-balance { color: #e74c3c; }
+
         @keyframes fadeInDown { from { opacity: 0; transform: translateY(-30px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
     `;
