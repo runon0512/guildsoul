@@ -10,6 +10,7 @@ let currentMonth = 1;
 let currentYear = 1; // ★ 年を追加
 let allTimeAdventurers = {}; // ★ ゲームオーバー時のリザルト用に全期間の冒険者データを記録
 let tutorialStep = 0; // 0:off, 1:scout, 2:join, 3:assign, 4:next month
+let isOffseason = false; // オフシーズン中かどうかのフラグ
 let isInTutorial = false;
 
 let hasScoutedThisMonth = false; // ★ ハードモードでのスカウト回数制限用
@@ -259,25 +260,25 @@ const STORY_QUESTS = [
 
 
 // --- DOM要素 ---
-const goldEl = document.getElementById('gold');
-const adventurerCountEl = document.getElementById('adventurer-count');
-const questsEl = document.getElementById('quests');
-const adventurerListEl = document.getElementById('adventurer-list');
-const scoutAreaEl = document.getElementById('scout-area'); 
-const scoutSkillEl = document.getElementById('scout-skill'); 
-const questDetailAreaEl = document.getElementById('quest-detail-area'); 
+let goldEl = document.getElementById('gold');
+let adventurerCountEl = document.getElementById('adventurer-count');
+let questsEl = document.getElementById('quests');
+let adventurerListEl = document.getElementById('adventurer-list');
+let scoutAreaEl = document.getElementById('scout-area');
+let scoutSkillEl = document.getElementById('scout-skill');
+let questDetailAreaEl = document.getElementById('quest-detail-area');
 
 // ★ 先月の記録用DOM要素
-const lastMonthLogEl = document.getElementById('last-month-log');
-const logContentEl = document.getElementById('log-content');
+let lastMonthLogEl = document.getElementById('last-month-log');
+let logContentEl = document.getElementById('log-content');
 
 // --- チュートリアル用DOM要素 ---
-const tutorialOverlay = document.getElementById('tutorial-overlay');
-const tutorialText = document.getElementById('tutorial-text');
+let tutorialOverlay = document.getElementById('tutorial-overlay');
+let tutorialText = document.getElementById('tutorial-text');
 
 // --- セーブ/ロード用DOM要素 ---
-const saveLoadModal = document.getElementById('save-load-modal');
-const saveLoadSlots = document.getElementById('save-load-slots');
+let saveLoadModal = document.getElementById('save-load-modal');
+let saveLoadSlots = document.getElementById('save-load-slots');
 
 // --- ユーティリティ関数 ---
 
@@ -822,12 +823,10 @@ function renderAdventurerList() {
             const questNameMatch = adv.status.match(/クエスト予定: (.+)/);
             const questName = questNameMatch ? questNameMatch[1] : '';
             actionButtons = `<button onclick="cancelScheduledQuest(${adv.id}, '${questName}')">予定をキャンセル</button>`;
-        } else {
-            // ★ 待機中の冒険者に「名前変更」ボタンを追加
+        } else if (!isOffseason) { // オフシーズン中は操作不可
             actionButtons = `
                 <button onclick="renameAdventurer(${adv.id})">名前変更</button>
                 <button onclick="showColorPalette(${adv.id})">カラー変更</button>
-                <button class="retire-button" onclick="retireAdventurer(${adv.id})">引退</button>
             `;
         }
 
@@ -982,41 +981,45 @@ function showColorPalette(advId) {
     paletteContent.className = 'modal-content';
 
     paletteContent.innerHTML = `<h3>${adv.name} のカラーを選択</h3>`;
-
+ 
     const colorPickerContainer = document.createElement('div');
     colorPickerContainer.className = 'color-picker-container';
-
+ 
     // カラーピッカーのinput要素を作成
     const colorInput = document.createElement('input');
     colorInput.type = 'color';
     colorInput.id = 'adv-color-picker';
     colorInput.value = adv.characterColor || '#cccccc'; // 現在の色を初期値として設定
-
+ 
     // ラベルを作成
     const colorLabel = document.createElement('label');
     colorLabel.htmlFor = 'adv-color-picker';
-    colorLabel.textContent = '色を自由に選択してください:';
-
-    // 決定ボタンを作成
-    const confirmButton = document.createElement('button');
-    confirmButton.textContent = '決定';
-    confirmButton.className = 'color-picker-confirm-button';
-    confirmButton.onclick = () => {
+    colorLabel.textContent = '色を選択するとリアルタイムで反映されます:';
+ 
+    // 色が変更されるたびにリアルタイムで更新
+    colorInput.addEventListener('input', () => {
         adv.characterColor = colorInput.value;
         updateAllTimeRecord(adv); // 念のため最高記録も更新
         updateDisplay();
+    });
+ 
+    // 閉じるボタンを作成
+    const closeButton = document.createElement('button');
+    closeButton.textContent = '閉じる';
+    closeButton.className = 'color-picker-confirm-button'; // 既存のスタイルを流用
+    closeButton.onclick = () => {
         paletteModal.remove();
     };
-
+ 
     colorPickerContainer.appendChild(colorLabel);
     colorPickerContainer.appendChild(colorInput);
-
+ 
     paletteContent.appendChild(colorPickerContainer);
-    paletteContent.appendChild(confirmButton);
-
+    paletteContent.appendChild(closeButton);
+ 
     paletteModal.appendChild(paletteContent);
     document.body.appendChild(paletteModal);
-
+ 
     // モーダルの外側をクリックしたら閉じる
     paletteModal.onclick = (e) => {
         if (e.target === paletteModal) {
@@ -1024,51 +1027,7 @@ function showColorPalette(advId) {
         }
     };
 }
-/**
- * 冒険者を引退させます。退職金として、その年の残りの月数分の給与を支払います。
- * @param {number} advId - 冒険者のID
- */
-function retireAdventurer(advId) {
-    const adv = adventurers.find(a => a.id === advId);
-    if (!adv) {
-        alert('対象の冒険者が見つかりません。');
-        return;
-    }
-
-    // クエスト予定中の冒険者は引退させられない
-    if (adv.status !== '待機中') {
-        alert('クエスト予定中の冒険者は引退させられません。');
-        return;
-    }
-
-    // 退職金の計算
-    // その年の残り月数（今月分も含む） x 月給
-    const remainingMonths = 12 - currentMonth + 1;
-    // ★ 引退時点の最新のOVR/ランクで年俸を再計算して月給を算出
-    // 現在の契約年俸から月給を算出
-    const monthlySalary = Math.ceil(adv.annualSalary / 11);
-    const severancePay = monthlySalary * remainingMonths;
-
-    const confirmationMessage = `冒険者「${adv.name}」を引退させますか？\n\n` +
-        `退職金として、今年の残り契約期間分 ${severancePay} 万G が必要です。\n` +
-        `（残り${remainingMonths}ヶ月 × 月給${monthlySalary}万G）`;
-
-    if (confirm(confirmationMessage)) {
-        if (gold < severancePay) {
-            alert(`資金が足りません！ 退職金の支払いに ${severancePay} 万G 必要です。`);
-            return;
-        }
-
-        // 支払いと引退処理
-        gold -= severancePay;
-        adventurers = adventurers.filter(a => a.id !== advId);
-
-        alert(`冒険者「${adv.name}」がギルドを去りました。\n退職金として ${severancePay} 万G を支払いました。`);
-        
-        // 表示を更新
-        updateDisplay();
-    }
-}
+ 
 
 
 // --- スカウト機能 (変更なし) ---
@@ -1283,6 +1242,7 @@ function joinSelectedAdventurers(policyKey) {
     
     alert(`${selectedAdventurers.length}名の冒険者をギルドに迎え入れ、合計 ${totalCost} 万Gを支払いました！`);
 
+    autosaveGame(); // ★ オートセーブ
     scoutCandidates = [];
     cancelScout();
 }
@@ -1874,11 +1834,11 @@ function sendAdventurersToQuest(questId, isPromotion, targetAdvId = null) {
     const isStoryQuest = questId >= 2001 && questId <= 2010;
 
     if (isPromotion) {
-        const adv = sentAdventurers[0];
+        let adv = sentAdventurers[0];
         if (!adv) return;
         const currentRankIndex = RANKS.indexOf(adv.rank);
         const nextRank = RANKS[currentRankIndex + 1];
-        quest = { // ★constを削除し、変数に代入する
+        quest = {
             id: questId,
             name: `${adv.name} の昇級試験 (${adv.rank} → ${nextRank})`,
             difficulty: PROMOTION_DIFFICULTIES[adv.rank],
@@ -1886,12 +1846,12 @@ function sendAdventurersToQuest(questId, isPromotion, targetAdvId = null) {
         };
         sendAdventurersToQuestInternal(quest, sentAdventurers);
     } else if (isStoryQuest) {
-        quest = getStoryQuestForYear(currentYear);
+        quest = getStoryQuestForYear(currentYear); // questに代入
         quest.isStory = true;
         sendAdventurersToQuestInternal(quest, sentAdventurers);
 
     } else {
-        quest = quests.find(q => q.id === questId); // ★constを削除し、変数に代入する
+        quest = quests.find(q => q.id === questId); // questに代入
         if (!quest) return;
         sendAdventurersToQuestInternal(quest, sentAdventurers);
     }
@@ -1942,6 +1902,12 @@ function processYearEnd() {
  * 月を進める機能（Next Monthボタンに対応）
  */
 function nextMonth() {
+    // オフシーズン中は月を進められない
+    if (isOffseason) {
+        alert('現在はオフシーズンです。契約更改を完了し、「新年を迎える」ボタンを押してください。');
+        return;
+    }
+
     // ★ 12月の場合、ストーリー任務がセットされているかチェック
     if (currentMonth === 12) {
         const hasStoryQuestInProgress = questsInProgress.some(qData => qData.quest.isStory);
@@ -1951,55 +1917,51 @@ function nextMonth() {
         }
     }
 
-
     const previousMonth = currentMonth;
     const previousYear = currentYear;
-    let yearEndMessage = '';
-    
     let summaryMessage = `【${previousYear}年 ${previousMonth}月の収支報告】\n\n`;
     let totalIncome = 0;
     let totalExpense = 0;
 
-    // ★ この月にストーリー任務が実行されたかどうかのフラグ
-    const wasStoryQuestMonth = questsInProgress.some(qData => qData.quest.isStory);
-    
     // 1. 進行中のクエストの結果を処理
     if (questsInProgress.length > 0) {
-        const questResults = processQuestsResults();
+        // 12月の場合、結果処理はオフシーズンに持ち越す
+        if (previousMonth === 12) {
+            const storyQuestResult = processQuestsResults();
+            if (storyQuestResult.isGameOver) {
+                // ゲームオーバーならここで終了
+                return;
+            }
+            // ストーリー任務成功時、オフシーズンに移行
+            isOffseason = true;
+            // ★ オフシーズン移行前に確認ダイアログを表示
+            if (!confirm('ストーリー任務を派遣します。本当に良いですか？')) {
+                isOffseason = false; // オフシーズンへの移行をキャンセル
+                return;
+            }
+
+            renderOffseasonScreen(storyQuestResult.message);
+            updateDisplay(); // オフシーズン画面の表示を更新
+            return;
+        }
+
+        const questResults = processQuestsResults(false);
+
+
         summaryMessage += questResults.message;
         totalIncome += questResults.income;
         totalExpense += questResults.expense;
     } else {
         summaryMessage += "前月に派遣予定のクエストはありませんでした。\n";
     }
-
-    // 2. 冒険者への給与支払い処理 (ストーリー任務の月は支払わない)
-    let monthlySalaryExpense = 0;
-    if (!wasStoryQuestMonth) {
-        monthlySalaryExpense = payMonthlySalary();
-        totalExpense += monthlySalaryExpense;
-    }
-
-    // 3. 年末処理 (給与支払いの後に行う)
-    if (previousMonth === 12) {
-        yearEndMessage = processYearEnd();
-        currentYear++;
-        currentMonth = 1;
-    } else {
-        currentMonth++;
-    }
-    
-    // 4. 加齢による能力低下処理
+    // 2. 冒険者への給与支払い処理
+    const monthlySalaryExpense = payMonthlySalary();
+    totalExpense += monthlySalaryExpense;
+    // 3. 月の更新と能力低下処理
+    currentMonth++;
     const agingMessage = processAgingEffects();
     if (agingMessage) {
         summaryMessage += agingMessage;
-    }
-
-    // 年末処理メッセージを追加 (クエストがなかった場合)
-    if (yearEndMessage && questsInProgress.length === 0) {
-        summaryMessage += yearEndMessage; // クエスト結果がなくても年末処理メッセージは表示
-    } else if (yearEndMessage) {
-        summaryMessage += yearEndMessage; // クエスト結果があっても年末処理メッセージは表示
     }
     
     summaryMessage += `\n-----------------------\n`;
@@ -2024,6 +1986,7 @@ function nextMonth() {
             logContentEl.textContent = summaryMessage.replace(/\*\*/g, '');
             lastMonthLogEl.style.display = 'block';
         }
+        autosaveGame(); // ★ オートセーブ
         alert("新しい月になりました！");
     }
     
@@ -2031,9 +1994,163 @@ function nextMonth() {
 }
 
 /**
+ * メインゲームUIの主要なセクションの表示/非表示を切り替えます。
+ * @param {boolean} show - trueなら表示、falseなら非表示
+ */
+function toggleMainGameUISections(show) {
+    const displayStyle = show ? 'block' : 'none';
+    if (lastMonthLogEl) lastMonthLogEl.style.display = displayStyle;
+    if (adventurerListEl) adventurerListEl.style.display = displayStyle;
+    if (scoutAreaEl) scoutAreaEl.style.display = 'none'; // scoutAreaは通常非表示
+    if (questDetailAreaEl) questDetailAreaEl.style.display = 'none'; // questDetailAreaは通常非表示
+    if (questsEl) questsEl.style.display = displayStyle;
+    const controlsEl = document.getElementById('controls');
+    // ★ オフシーズン中はスカウト等の操作ができないようにコントロール自体を非表示にする
+    const displayControls = show && !isOffseason;
+    if (controlsEl) controlsEl.style.display = displayControls ? 'flex' : 'none';
+}
+
+/**
+ * オフシーズン画面を描画します。
+ * @param {string} questResultMessage - クエスト結果のメッセージ
+ */
+function renderOffseasonScreen(questResultMessage) {
+    const mainContent = document.getElementById('main-content');
+    toggleMainGameUISections(false); // メインゲームUIを非表示にする
+    const offseasonContainer = document.createElement('div');
+    offseasonContainer.id = 'offseason-container';
+    offseasonContainer.innerHTML = `
+        <div id="offseason-container">
+            <h1>オフシーズン</h1>
+            <p>${currentYear}年のシーズンが終了しました。来年に向けてギルドの体制を整えましょう。</p>
+            
+            <div class="log-panel">
+                <h3>${currentYear}年12月 クエスト結果</h3>
+                <pre>${questResultMessage.replace(/\*\*/g, '')}</pre>
+            </div>
+
+            <h2>契約更改</h2>
+            <p>各冒険者の来季の年俸を確認し、契約を「更新」するか「解除」するか選択してください。</p>
+            <div id="contract-renewal-list"></div>
+            <div style="text-align: center; margin-top: 20px;">
+                <button id="finish-offseason-button" onclick="finishOffseason()">新年を迎える</button>
+            </div>
+        </div>
+    `;
+    mainContent.appendChild(offseasonContainer);
+    const contractListEl = document.getElementById('contract-renewal-list');
+    adventurers.forEach(adv => {
+        // 年齢を+1し、来季の年俸を計算
+        const nextAge = adv.age + 1;
+        const nextSalary = calculateAnnualSalary(adv.ovr, adv.rank);
+
+        const advDiv = document.createElement('div');
+        advDiv.className = 'contract-item';
+        advDiv.id = `contract-item-${adv.id}`;
+        advDiv.innerHTML = `
+            <div class="contract-adv-info">
+                <strong>${adv.name}</strong> (現 ${adv.age}歳 → 来季 ${nextAge}歳) - ランク: ${getStyledRankHtml(adv.rank)} / OVR: ${adv.ovr}<br>
+                年俸: ${adv.annualSalary}万G → <strong style="color: #f1c40f;">来季年俸: ${nextSalary}万G</strong>
+            </div>
+            <div class="contract-actions">
+                <button class="contract-renew-button" onclick="handleContractDecision(${adv.id}, true, ${nextAge}, ${nextSalary})">契約更新</button>
+                <button class="contract-release-button" onclick="handleContractDecision(${adv.id}, false)">契約解除</button>
+            </div>
+        `;
+        contractListEl.appendChild(advDiv);
+    });
+
+    // 全員の契約更改が終わるまで「新年を迎える」ボタンは無効
+    document.getElementById('finish-offseason-button').disabled = true;
+}
+
+/**
+ * 契約更改の決定を処理します。
+ * @param {number} advId - 対象の冒険者ID
+ * @param {boolean} willRenew - 更新するかどうか
+ * @param {number} [nextAge] - 更新する場合の来季の年齢
+ * @param {number} [nextSalary] - 更新する場合の来季の年俸
+ */
+function handleContractDecision(advId, willRenew, nextAge, nextSalary) {
+    const adv = adventurers.find(a => a.id === advId);
+    if (!adv) return;
+ 
+    const itemEl = document.getElementById(`contract-item-${advId}`);
+    const renewButton = itemEl.querySelector('.contract-renew-button');
+    const releaseButton = itemEl.querySelector('.contract-release-button');
+ 
+    if (willRenew) {
+        adv.isRenewed = true; // 契約更新済みフラグ
+        // 契約更新時に適用される年齢と年俸を一時的に保持
+        adv.nextAge = nextAge;
+        adv.nextSalary = nextSalary;
+        renewButton.classList.add('selected');
+        releaseButton.classList.remove('selected');
+    } else {
+        adv.isRenewed = false; // 契約解除フラグ
+        // 更新しないので一時データは不要
+        delete adv.nextAge;
+        delete adv.nextSalary;
+        releaseButton.classList.add('selected');
+        renewButton.classList.remove('selected');
+    }
+ 
+    // 全員の意思決定が終わったかチェック
+    const allDecided = adventurers.every(a => a.hasOwnProperty('isRenewed'));
+    if (allDecided) {
+        document.getElementById('finish-offseason-button').disabled = false;
+    }
+}
+
+/**
+ * オフシーズンを終了し、新年を開始します。
+ */
+function finishOffseason() {
+    // 契約更新する冒険者のステータスを更新
+    adventurers.forEach(adv => {
+        if (adv.isRenewed) {
+            adv.age = adv.nextAge;
+            adv.annualSalary = adv.nextSalary;
+        }
+    });
+ 
+    // 契約解除（isRenewedがfalse）の冒険者をギルドから削除
+    adventurers = adventurers.filter(adv => adv.isRenewed);
+    // 一時的なプロパティを削除
+    adventurers.forEach(adv => { delete adv.isRenewed; delete adv.nextAge; delete adv.nextSalary; });
+
+    isOffseason = false;
+    currentYear++;
+    currentMonth = 1;
+
+    // オフシーズンコンテナを削除
+    const offseasonContainer = document.getElementById('offseason-container');
+    if (offseasonContainer) {
+        offseasonContainer.remove();
+    }
+
+    // メインゲームUIを再表示
+    toggleMainGameUISections(true);
+
+    // ★ オフシーズン（12月）のクエスト結果を「先月の記録」として表示する
+    const lastLog = document.querySelector('#offseason-container .log-panel pre');
+    if (lastLog && logContentEl && lastMonthLogEl) {
+        logContentEl.textContent = lastLog.textContent;
+        lastMonthLogEl.style.display = 'block';
+    }
+
+
+    // DOM要素の参照は変わっていないので再取得は不要
+    // reinitializeDOMElements();
+
+    alert(`${currentYear}年になりました！`);
+    updateDisplay();
+}
+
+/**
  * 進行中のクエストの結果をまとめて処理します。
  */
-function processQuestsResults() {
+function processQuestsResults(isGameOverCheckOnly = false) {
     let message = `**【クエスト結果】**\n`;
     let totalIncome = 0;
     let totalExpense = 0;
@@ -2081,7 +2198,7 @@ function processQuestsResults() {
             if (quest.isStory) {
                 // 10年目クリアでゲームクリア
                 if (currentYear === 10) {
-                    showGameClearScreen();
+                    showGameClearScreen(); // ゲームクリア画面へ
                     return; // ゲームクリアなのでここで処理を終了
                 }
                 resultMessage = `✅ 成功: ギルドは存続し、新年を迎えることができます！ (獲得EXP(平均): ${averageGainedExp}P)`;
@@ -2113,7 +2230,9 @@ function processQuestsResults() {
         } else {
             // ★ ストーリー任務失敗 → ゲームオーバー
             if (quest.isStory) {
-                showGameOverScreen(`【${quest.name}】に失敗... ギルドの挑戦はここで終わりを告げた。`);
+                const gameOverMessage = `【${quest.name}】に失敗... ギルドの挑戦はここで終わりを告げた。`;
+                showGameOverScreen(gameOverMessage);
+                return { isGameOver: true, message: gameOverMessage };
                 return; // ゲームオーバーなのでここで処理を終了
             }
 
@@ -2158,7 +2277,7 @@ function processQuestsResults() {
         message += `\n**【レベルアップ報告】**\n` + levelUpMessages.join('\n') + '\n';
     }
 
-    return { message, income: totalIncome, expense: totalExpense };
+    return { message, income: totalIncome, expense: totalExpense, isGameOver: false };
 }
 
 /**
@@ -2166,6 +2285,9 @@ function processQuestsResults() {
  * @returns {number} 支払った月給の合計額 (万G)
  */
 function payMonthlySalary() {
+    // 12月はストーリー任務のため給与支払いはなし
+    if (currentMonth === 12) return 0;
+
     let totalMonthlySalary = 0;
     adventurers.forEach(adv => {
         const monthlySalary = Math.ceil(adv.annualSalary / 11); 
@@ -2584,7 +2706,7 @@ function renderHallOfFame(records, containerId) {
  */
 function getGameState(dataName, memo) {
     return {
-        dataName: dataName || `無題のデータ`,
+        dataName: dataName || `${currentYear}年${currentMonth}月 ギルドデータ`,
         difficulty: gameDifficulty, // ★ 難易度を保存
         memo: memo || '',
         gold,
@@ -2669,15 +2791,46 @@ function showSaveLoadModal(mode) {
     saveLoadSlots.innerHTML = '';
     const title = mode === 'save' ? 'セーブするスロットを選択' : 'ロードするスロットを選択';
     document.getElementById('save-load-title').textContent = title;
+    
+    // --- オートセーブスロットの表示 ---
+    const autosaveKey = 'guildSoulAutosave';
+    const autosavedData = JSON.parse(localStorage.getItem(autosaveKey) || 'null');
 
-    for (let i = 1; i <= 3; i++) {
+    const autosaveDiv = document.createElement('div');
+    autosaveDiv.className = 'save-slot autosave-slot';
+    let autosaveInfo = `<h4>オートセーブ</h4>`;
+    if (autosavedData) {
+        autosaveInfo += `
+            <p class="save-data-name">${autosavedData.dataName || '無題のデータ'}</p>
+            <p class="save-data-memo">難易度: ${DIFFICULTY_SETTINGS[autosavedData.difficulty]?.name || '不明'} | ${autosavedData.memo || 'メモはありません'}</p>
+            <p class="save-data-details">${autosavedData.currentYear}年 ${autosavedData.currentMonth}月 / 所持金: ${autosavedData.gold}万G</p>
+            <p class="save-data-date">保存日時: ${autosavedData.saveDate}</p>
+        `;
+    } else {
+        autosaveInfo += '<p>オートセーブデータはありません</p>';
+    }
+
+    const autosaveActionButton = document.createElement('button');
+    autosaveActionButton.textContent = 'ロード';
+    autosaveActionButton.disabled = !autosavedData;
+    autosaveActionButton.onclick = () => loadGame(autosaveKey);
+    if (autosavedData) autosaveActionButton.classList.add('save-load-button-active');
+    
+    autosaveDiv.innerHTML = autosaveInfo;
+    if (mode === 'load') { // ロードモードの時だけボタンを追加
+        autosaveDiv.appendChild(autosaveActionButton);
+    }
+    saveLoadSlots.appendChild(autosaveDiv);
+
+    // --- 手動セーブスロットの表示 ---
+    for (let i = 1; i <= 3; i++) { // 3つの手動スロット
         const slotKey = `guildSoulSaveSlot${i}`;
         const savedData = JSON.parse(localStorage.getItem(slotKey) || 'null');
 
         const slotDiv = document.createElement('div');
         slotDiv.className = 'save-slot';
 
-        let slotInfo = `<h4>スロット ${i}</h4>`;
+        let slotInfo = `<h4>手動セーブ ${i}</h4>`;
         if (savedData) {
             slotInfo += `
                 <p class="save-data-name">${savedData.dataName || '無題のデータ'}</p>
@@ -2692,18 +2845,20 @@ function showSaveLoadModal(mode) {
         const actionButton = document.createElement('button');
         if (mode === 'save') {
             actionButton.textContent = savedData ? '上書き保存' : 'セーブ';
-            actionButton.onclick = () => saveGame(i);
+            actionButton.onclick = () => saveGame(slotKey);
+            actionButton.classList.add('save-load-button-active'); // セーブボタンは常にアクティブ
         } else {
             actionButton.textContent = 'ロード';
             actionButton.disabled = !savedData;
-            actionButton.onclick = () => loadGame(i);
+            actionButton.onclick = () => loadGame(slotKey);
+            if (savedData) actionButton.classList.add('save-load-button-active'); // データがあればアクティブ
         }
 
         slotDiv.innerHTML = slotInfo;
         slotDiv.appendChild(actionButton);
         saveLoadSlots.appendChild(slotDiv);
     }
-
+    
     saveLoadModal.style.display = 'flex';
 }
 
@@ -2711,30 +2866,49 @@ function closeSaveLoadModal() {
     saveLoadModal.style.display = 'none';
 }
 
-function saveGame(slot) {
-    const defaultName = `${currentYear}年${currentMonth}月 ギルドデータ`;
-    const dataName = prompt(`セーブデータの名前を入力してください（スロット${slot}）`, defaultName);
-    // ユーザーがキャンセルした場合は処理を中断
-    if (dataName === null) {
-        return;
-    }
+/**
+ * 現在のゲーム状態を自動セーブします。
+ */
+function autosaveGame() {
+    saveGame('guildSoulAutosave'); // オートセーブ用のキーを使用
+}
 
-    const memo = prompt("このセーブデータに関するメモを残しますか？（任意）", "");
-    // ユーザーがキャンセルした場合は処理を中断
-    if (memo === null) {
-        return;
+function saveGame(slotKey) {
+    let dataName, memo;
+    if (slotKey === 'guildSoulAutosave') {
+        dataName = `${currentYear}年${currentMonth}月 オートセーブ`;
+        memo = '自動保存されたデータ';
+    } else {
+        const slotNumber = slotKey.replace('guildSoulSaveSlot', '');
+        const defaultName = `${currentYear}年${currentMonth}月 ギルドデータ`;
+        dataName = prompt(`セーブデータの名前を入力してください（スロット${slotNumber}）`, defaultName);
+        if (dataName === null) {
+            return; // ユーザーがキャンセルした場合
+        }
+        memo = prompt("このセーブデータに関するメモを残しますか？（任意）", "");
+        if (memo === null) {
+            return; // ユーザーがキャンセルした場合
+        }
     }
 
     const gameState = getGameState(dataName, memo);
-    localStorage.setItem(`guildSoulSaveSlot${slot}`, JSON.stringify(gameState));
-    alert(`「${dataName}」をスロット${slot}にセーブしました。`);
-    showSaveLoadModal('save'); // モーダルを再描画して更新を反映
+    localStorage.setItem(slotKey, JSON.stringify(gameState));
+    
+    if (slotKey !== 'guildSoulAutosave') {
+        alert(`「${dataName}」をスロット${slotKey.replace('guildSoulSaveSlot', '')}にセーブしました。`);
+        showSaveLoadModal('save'); // モーダルを再描画して更新を反映
+    }
 }
 
-function loadGame(slot) {
-    const savedData = localStorage.getItem(`guildSoulSaveSlot${slot}`);
+function loadGame(slotKey) {
+    const savedData = localStorage.getItem(slotKey);
     if (savedData) {
-        if (!confirm(`スロット${slot}のデータをロードしますか？\n現在のゲーム内容は失われます。`)) return;
+        const slotNumber = slotKey.replace('guildSoulSaveSlot', '');
+        const confirmMessage = slotKey === 'guildSoulAutosave'
+            ? `オートセーブデータをロードしますか？\n現在のゲーム内容は失われます。`
+            : `スロット${slotNumber}のデータをロードしますか？\n現在のゲーム内容は失われます。`;
+
+        if (!confirm(confirmMessage)) return;
         loadGameState(JSON.parse(savedData));
         closeSaveLoadModal();
     } else {
@@ -2860,6 +3034,28 @@ function renderStylishHomeScreen() {
         }
         .positive-balance { color: #2ecc71; }
         .negative-balance { color: #e74c3c; }
+        
+        /* オフシーズンの契約更改ボタンのスタイル */
+        .contract-actions button.selected {
+            transform: scale(1.05);
+            box-shadow: 0 0 10px #f1c40f;
+            border-color: #f1c40f;
+        }
+        .contract-renew-button.selected { background-color: #27ae60; border-color: #2ecc71; }
+        .contract-release-button.selected { background-color: #c0392b; border-color: #e74c3c; }
+
+        /* セーブ/ロードボタンのスタイル */
+        .save-load-button-active {
+            background-color: #2ecc71; /* 緑色 */
+            border-color: #27ae60;
+            color: #fff;
+        }
+        .save-load-button-active:hover {
+            background-color: #27ae60;
+            border-color: #27ae60;
+        }
+
+
 
         @keyframes fadeInDown { from { opacity: 0; transform: translateY(-30px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
@@ -2964,6 +3160,26 @@ function showMainMenu() {
     document.getElementById('main-menu').style.display = 'flex';
 }
 // --- 初期化 ---
+
+/**
+ * 動的に生成されたDOM要素への参照を再初期化します。
+ */
+function reinitializeDOMElements() {
+    goldEl = document.getElementById('gold');
+    adventurerCountEl = document.getElementById('adventurer-count');
+    questsEl = document.getElementById('quests');
+    adventurerListEl = document.getElementById('adventurer-list');
+    scoutAreaEl = document.getElementById('scout-area');
+    scoutSkillEl = document.getElementById('scout-skill');
+    questDetailAreaEl = document.getElementById('quest-detail-area');
+    lastMonthLogEl = document.getElementById('last-month-log');
+    logContentEl = document.getElementById('log-content');
+    tutorialOverlay = document.getElementById('tutorial-overlay');
+    tutorialText = document.getElementById('tutorial-text');
+    saveLoadModal = document.getElementById('save-load-modal');
+    saveLoadSlots = document.getElementById('save-load-slots');
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     // ゲーム開始はボタンクリックで行うため、ここでは何もしない
     renderStylishHomeScreen();
