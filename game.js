@@ -4209,6 +4209,11 @@ function showStatBonusAnimation(cardElement, statName, bonusAmount) {
  */
 function showRatingBattleScreen() {
     const homeScreen = document.getElementById('home-screen');
+      // ★ レート対戦画面が上から表示されるようにスタイルを調整
+    homeScreen.style.justifyContent = 'flex-start';
+    homeScreen.style.paddingTop = '20px'; // 上部に少し余白を追加
+    homeScreen.style.paddingBottom = '20px'; // 下部にも余白を追加
+
     homeScreen.innerHTML = ''; // 一旦クリア
     homeScreen.innerHTML = `
         <div id="rating-battle-overlay" class="modal-overlay" style="display: none; flex-direction: column; color: white; font-size: 1.5rem;">
