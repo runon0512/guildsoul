@@ -3161,6 +3161,10 @@ function showPastRecords() {
     const pastRecords = JSON.parse(localStorage.getItem('guildSoulHallOfFame') || '{}');
 
     const homeScreen = document.getElementById('home-screen');
+    // ★ 殿堂リストが上から表示されるようにスタイルを調整
+    homeScreen.style.justifyContent = 'flex-start';
+    homeScreen.style.paddingTop = '40px'; // 上部に余白を追加
+
     homeScreen.innerHTML = `
         <h2>過去の記録 - ギルドの殿堂</h2>
         <div id="hall-of-fame-container"></div>
@@ -3544,10 +3548,6 @@ function renderStylishHomeScreen() {
             animation: fadeInDown 1s ease-out;
         }
         .home-subtitle {
-            /* ★ レート対戦画面でスクロールバーが表示されてもガタつかないように調整 */
-            padding-left: 15px;
-            padding-right: 15px;
-
     font-size: clamp(1rem, 4vw, 1.5rem); /* 画面幅に応じてサイズを調整 */
             margin-bottom: 40px;
             color: #bdc3c7;
@@ -3557,11 +3557,8 @@ function renderStylishHomeScreen() {
         .home-menu {
             display: flex;
             flex-direction: column;
-            /* ★ レート対戦画面でスクロールバーが表示されてもガタつかないように調整 */
             width: 100%;
             align-items: center;
-            box-sizing: border-box;
-            padding: 0 15px;
             gap: 15px;
             animation: fadeInUp 1s ease-out 1s;
             animation-fill-mode: backwards;
