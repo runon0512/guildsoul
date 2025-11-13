@@ -182,6 +182,60 @@ const ELEMENT_BRIGHTNESS = {
     '毒': 1.0, '水晶': 1.2, '獣': 1.1, '霊': 1.1, '竜': 1.2, '幻': 1.1, '時': 1.1, '星': 1.3
 };
 
+// --- レート対戦用 固有スキル定義 ---
+const ATTRIBUTE_UNIQUE_SKILLS = {
+    // --- 炎属性 ---
+    '炎': { name: '炎の心', description: 'OVRで負けている時、自身のOVRを+50する。', condition: (diff) => diff < 0, effect: 50 },
+    '烈火': { name: '烈火の怒り', description: 'OVRで40以上負けている時、自身のOVRを+80する。', condition: (diff) => diff <= -40, effect: 80 },
+    '爆炎': { name: '爆炎の魂', description: 'OVRで60以上負けている時、自身のOVRを+120する。', condition: (diff) => diff <= -60, effect: 120 },
+    // --- 水属性 ---
+    '水': { name: '水の鏡', description: 'OVRで勝っている時、自身のOVRを+15する。', condition: (diff) => diff > 0, effect: 15 },
+    '流水': { name: '流水の構え', description: 'OVRで40以上勝っている時、自身のOVRを+20する。', condition: (diff) => diff >= 40, effect: 10 },
+    '渦潮': { name: '渦潮の支配', description: 'OVRで60以上勝っている時、自身のOVRを+30する。', condition: (diff) => diff >= 60, effect: 30 },
+    // --- 氷属性 ---
+    '氷': { name: '氷の壁', description: 'OVRが相手と同じか近い時(差が±30以内)、自身のOVRを+30する。', condition: (diff) => Math.abs(diff) <= 30, effect: 30 },
+    '氷結': { name: '氷結の鎧', description: 'OVRが相手と同じか近い時(差が±20以内)、自身のOVRを+40する。', condition: (diff) => Math.abs(diff) <= 20, effect: 40 },
+    // --- 雷属性 ---
+    '雷': { name: '雷鳴', description: 'OVRで負けている時、自身のOVRを+50する。', condition: (diff) => diff < 0, effect: 50 },
+    '電光': { name: '電光石火', description: 'OVRで40以上負けている時、自身のOVRを+80する。', condition: (diff) => diff <= -40, effect: 80 },
+    '轟雷': { name: '轟雷の咆哮', description: 'OVRで60以上負けている時、自身のOVRを+120する。', condition: (diff) => diff <= -60, effect: 120 },
+    // --- 風属性 ---
+    '風': { name: '風の舞', description: 'OVRで勝っている時、自身のOVRを+15する。', condition: (diff) => diff > 0, effect: 15 },
+    '疾風': { name: '疾風迅雷', description: 'OVRで40以上勝っている時、自身のOVRを+20する。', condition: (diff) => diff >= 40, effect: 20 },
+    '嵐': { name: '嵐の目', description: 'OVRで60以上勝っている時、自身のOVRを+30する。', condition: (diff) => diff >= 60, effect: 30 },
+    // --- 土属性 ---
+    '土': { name: '不動', description: 'OVRが相手と同じか近い時(差が±30以内)、自身のOVRを+30する。', condition: (diff) => Math.abs(diff) <= 30, effect: 30 },
+    '大地': { name: '大地の守り', description: 'OVRが相手と同じか近い時(差が±20以内)、自身のOVRを+40する。', condition: (diff) => Math.abs(diff) <= 20, effect: 40 },
+    'ガイア': { name: 'ガイアの祝福', description: 'OVRが相手と同じか近い時(差が±10以内)、自身のOVRを+50する。', condition: (diff) => Math.abs(diff) <= 10, effect: 50 },
+    // --- 光・闇属性 ---
+    '光': { name: '光の導き', description: 'OVRで勝っている時、自身のOVRを+15する。', condition: (diff) => diff > 0, effect: 15 },
+    '聖光': { name: '聖光の奇跡', description: 'OVRで40以上勝っている時、自身のOVRを+20する。', condition: (diff) => diff >= 40, effect: 20 },
+    '神聖': { name: '神聖なる力', description: 'OVRで60以上勝っている時、自身のOVRを+30する。', condition: (diff) => diff >= 60, effect: 30 },
+    '闇': { name: '闇の契約', description: 'OVRで負けている時、自身のOVRを+50する。', condition: (diff) => diff < 0, effect: 50 },
+    '常闇': { name: '常闇の帳', description: 'OVRで40以上負けている時、自身のOVRを+80する。', condition: (diff) => diff <= -40, effect: 80 },
+    '深淵': { name: '深淵の呼び声', description: 'OVRで60以上負けている時、自身のOVRを+120する。', condition: (diff) => diff <= -60, effect: 120 },
+    // --- 特殊属性 (Common/Uncommon) ---
+    '岩': { name: '岩の意志', description: 'OVRが相手と同じか近い時(差が±30以内)、自身のOVRを+30する。', condition: (diff) => Math.abs(diff) <= 30, effect: 30 },
+    '鋼': { name: '鋼の精神', description: 'OVRが相手と同じか近い時(差が±20以内)、自身のOVRを+40する。', condition: (diff) => Math.abs(diff) <= 20, effect: 40 },
+    '毒': { name: '猛毒', description: 'OVRで負けている時、自身のOVRを+50する。', condition: (diff) => diff < 0, effect: 50 },
+    '水晶': { name: '水晶の輝き', description: 'OVRで勝っている時、自身のOVRを+15する。', condition: (diff) => diff > 0, effect: 15 },
+    '獣': { name: '獣の咆哮', description: 'OVRで負けている時、自身のOVRを+55する。', condition: (diff) => diff < 0, effect: 55 },
+    '霊': { name: '霊の囁き', description: 'OVRで勝っている時、自身のOVRを+15する。', condition: (diff) => diff > 0, effect: 15 },
+    // --- 特殊属性 (Rare) ---
+    '竜': { name: '竜の血脈', description: 'OVRで50以上負けている時、自身のOVRを+100する。', condition: (diff) => diff <= -50, effect: 100 },
+    '混沌': { name: '混沌の渦', description: 'OVRの差に関わらず、自身のOVRを+10する。', condition: (diff) => true, effect: 10 },
+    '幻': { name: '幻惑', description: 'OVRで勝っている時、自身のOVRを+15する。', condition: (diff) => diff > 0, effect: 15 },
+    '機': { name: 'オーバークロック', description: 'OVRが相手と同じか近い時(差が±25以内)、自身のOVRを+35する。', condition: (diff) => Math.abs(diff) <= 25, effect: 35 },
+    '時': { name: 'タイムリープ', description: 'OVRで70以上負けている時、自身のOVRを+140する。', condition: (diff) => diff <= -70, effect: 140 },
+     // --- 特殊属性 (Epic) ---
+    '太陽': { name: 'プロミネンス', description: 'OVRで80以上負けているとき、自身のOVRを+160する。', condition: (diff) => diff <= -80, effect: 160 },
+    '月': { name: '月光の加護', description: 'OVRで勝っているが、差が30未満しかないとき、自身のOVRを+40する。', condition: (diff) => diff > 0 && diff < 30, effect: 40 },
+    '星': { name: '星の導き', description: 'OVRが相手と同じか近い時(差が±50以内)、自身のOVRを+20する。', condition: (diff) => Math.abs(diff) <= 50, effect: 20 },
+    '虚無': { name: '虚無の波動', description: 'OVRで負けているが、差が30未満しかないとき、自身のOVRを+60する。', condition: (diff) => diff < 0 && diff > -30, effect: 60 },
+    '創生': { name: '創生の息吹', description: 'OVRで100以上勝っているとき、自身のOVRを+50する。', condition: (diff) => diff >= 100, effect: 50 },
+    '終焉': { name: '終焉の宣告', description: 'OVRの相手との差が50以上の時、自身のOVRを+80する。', condition: (diff) => Math.abs(diff) >= 50, effect: 80 },
+    '奇跡': { name: '奇跡の大逆転', description: 'OVRで100以上負けているとき、自身のOVRを+200する。', condition: (diff) => diff <= -100, effect: 200 },
+};
 
 // --- アバターパーツの位置と大きさの設定 ---
 const AVATAR_PART_CONFIG = {
@@ -3893,7 +3947,8 @@ function renderStylishHomeScreen() {
         }
         .team-display .adventurer-card {
             width: 160px; /* 幅を少し広げる */
-            height: 220px; /* 高さを広げて全体を表示 */
+            /* height: 220px; */ /* 高さを削除 */
+            aspect-ratio: 160 / 220; /* 縦横比を固定 */
             display: flex; 
             flex-direction: column;
             justify-content: center;
@@ -3995,10 +4050,10 @@ function renderStylishHomeScreen() {
     style.textContent += `
         .stat-bonus-animation {
             position: absolute;
-            top: 50%;
+            top: 45%; /* 少し上に表示 */
             left: 50%;
             transform: translate(-50%, -50%);
-            font-size: 1.8rem;
+            font-size: clamp(1.1rem, 4vw, 1.6rem); /* 画面幅に応じてサイズを調整 */
             font-weight: bold;
             text-shadow: 0 0 5px black, 0 0 8px black;
             opacity: 0;
@@ -4006,6 +4061,13 @@ function renderStylishHomeScreen() {
             animation: bonus-anim 1.4s ease-out forwards; /* アニメーション自体は素早く */
             pointer-events: none;
             z-index: 100; /* 最前面に表示 */
+        }
+        /* ルーレット演出用のハイライト */
+        .roulette-highlight-player, .roulette-highlight-opponent {
+            box-shadow: 0 0 20px 10px #f1c40f;
+            transform: scale(1.05);
+            border-color: #f1c40f !important;
+            transition: transform 0.1s ease-out, box-shadow 0.1s ease-out;
         }
         @keyframes bonus-anim {
             0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
@@ -4047,10 +4109,13 @@ function renderStylishHomeScreen() {
             }
             .team-display .adventurer-card {
                 width: 100px;
-                height: 160px;
+                /* height: 160px; */ /* 高さを削除し、aspect-ratioを適用 */
             }
             .team-display .adventurer-card .avatar-container {
                 height: 60px;
+            }
+            .card-attribute {
+                transform: scale(0.9); /* 属性アイコンを少し小さく */
             }
         }
     `;
@@ -4184,7 +4249,7 @@ function showStatBonusAnimation(cardElement, statName, bonusAmount) {
 
     setTimeout(() => {
         bonusText.remove();
-    }, 11400); // 11.4秒 (CSSアニメーションのduration)
+    }, 1400); // 1.4秒 (CSSアニメーションのduration)
 
     // 2. 右上のOVR表示を更新
     const ovrContainer = cardElement.querySelector('.card-ovr');
@@ -4546,6 +4611,66 @@ function generateOpponentTeam(targetRating) {
 }
 
 /**
+ * 対戦相手をランダムに選択するルーレット演出を表示します。
+ * @param {Array<Object>} team - 冒険者オブジェクトの配列
+ * @param {string} teamType - 'player' または 'opponent'
+ * @param {Array<number>} availableIndices - 選択可能なインデックスの配列
+ * @returns {Promise<number>} 選択された冒険者のインデックス
+ */
+function runMatchupRoulette(team, teamType, availableIndices) {
+    return new Promise(resolve => {
+        let highlightIndex = 0;
+        const rouletteInterval = setInterval(() => {
+            // 前のハイライトを消す
+            const previouslyHighlightedCard = document.querySelector(`.roulette-highlight-${teamType}`);
+            if (previouslyHighlightedCard) {
+                previouslyHighlightedCard.classList.remove(`roulette-highlight-${teamType}`);
+            }
+
+            // 次のカードをハイライト
+            const currentIndex = availableIndices[highlightIndex % availableIndices.length];
+            const cardId = teamType === 'player' ? `battle-card-player-${team[currentIndex].id}` : `battle-card-opponent-${currentIndex}`;
+            const card = document.getElementById(cardId);
+            if (card) {
+                card.classList.add(`roulette-highlight-${teamType}`);
+            }
+            highlightIndex++;
+        }, 100); // 100ミリ秒ごとにハイライトを移動
+
+        // 1.5秒後にルーレットを停止
+        setTimeout(() => {
+            clearInterval(rouletteInterval);
+            const finalIndex = Math.floor(Math.random() * availableIndices.length);
+            const selectedAdventurerIndex = availableIndices[finalIndex];
+            resolve(selectedAdventurerIndex);
+        }, 1500);
+    });
+}
+
+/**
+ * レート対戦中に固有スキルの演出を表示します。
+ * @param {HTMLElement} cardElement - 対象となる冒険者のカード要素
+ * @param {string} skillName - スキル名
+ * @param {number} bonusAmount - 加算するボーナス量
+ */
+function showUniqueSkillAnimation(cardElement, skillName, bonusAmount) {
+    return new Promise(resolve => {
+        // スキル名を表示
+        const skillNameText = document.createElement('div');
+        skillNameText.textContent = `【${skillName}】`;
+        skillNameText.className = 'stat-bonus-animation';
+        skillNameText.style.color = '#f1c40f'; // 金色
+        skillNameText.style.fontSize = 'clamp(1.3rem, 5vw, 2rem)'; // スキル名は少し大きめに
+        cardElement.appendChild(skillNameText);
+        
+        // 1秒後にテキストを削除し、Promiseを解決
+        setTimeout(() => {
+            skillNameText.remove();
+            resolve();
+        }, 1000);
+    });
+}
+/**
  * レート対戦の3本勝負を実行します。
  */
 async function startRatingMatch(playerTeam, opponentTeam, opponentRating) {
@@ -4572,21 +4697,38 @@ async function startRatingMatch(playerTeam, opponentTeam, opponentRating) {
     let playerWins = 0;
     let opponentWins = 0;
 
+    // 対戦可能な選手リストを準備
+    let availablePlayerIndices = [0, 1, 2];
+    let availableOpponentIndices = [0, 1, 2];
+
     // 対戦開始前に全カードのOVR表示をリセット
     const allBattleCards = document.querySelectorAll('#battle-arena .adventurer-card');
     allBattleCards.forEach(card => {
         const ovrContainer = card.querySelector('.card-ovr');
         if (ovrContainer) {
             ovrContainer.classList.remove('bonus-active');
-            const originalOvr = ovrContainer.dataset.originalOvr;
-            ovrContainer.querySelector('.bonus-ovr-display').textContent = '';
-            ovrContainer.querySelector('.current-ovr-value').textContent = originalOvr;
+            const bonusDisplay = ovrContainer.querySelector('.bonus-ovr-display');
+            const currentOvrValueEl = ovrContainer.querySelector('.current-ovr-value');
+            if (bonusDisplay && currentOvrValueEl) {
+                const originalOvr = ovrContainer.dataset.originalOvr;
+                bonusDisplay.textContent = '';
+                currentOvrValueEl.textContent = originalOvr;
+            }
         }
     });
 
     for (let i = 0; i < 3; i++) {
-        const playerCard = document.getElementById(`battle-card-player-${playerTeam[i].id}`);
-        const opponentCard = document.getElementById(`battle-card-opponent-${i}`);
+        // ルーレットで対戦相手を決定
+        const [playerIndex, opponentIndex] = await Promise.all([
+            runMatchupRoulette(playerTeam, 'player', availablePlayerIndices),
+            runMatchupRoulette(opponentTeam, 'opponent', availableOpponentIndices)
+        ]);
+
+        // 対戦相手が確定したら、ハイライトを消す
+        document.querySelectorAll('.roulette-highlight-player, .roulette-highlight-opponent').forEach(el => el.classList.remove('roulette-highlight-player', 'roulette-highlight-opponent'));
+
+        const playerCard = document.getElementById(`battle-card-player-${playerTeam[playerIndex].id}`);
+        const opponentCard = document.getElementById(`battle-card-opponent-${opponentIndex}`);
 
         // 1. 対戦カードをハイライト
         playerCard.classList.add('fighting');
@@ -4594,10 +4736,10 @@ async function startRatingMatch(playerTeam, opponentTeam, opponentRating) {
         await new Promise(resolve => setTimeout(resolve, 1500));
 
         // 2. ステータス比較とボーナス加算
-        let playerBonusOvr = playerTeam[i].peakOvr;
-        let opponentBonusOvr = opponentTeam[i].ovr;
-        const playerSkills = playerTeam[i].peakSkills;
-        const opponentSkills = opponentTeam[i].skills;
+        let playerBonusOvr = playerTeam[playerIndex].peakOvr;
+        let opponentBonusOvr = opponentTeam[opponentIndex].ovr;
+        const playerSkills = playerTeam[playerIndex].peakSkills;
+        const opponentSkills = opponentTeam[opponentIndex].skills;
 
         const stats = ['combat', 'magic', 'exploration'];
         const statNames = { combat: '戦闘', magic: '魔法', exploration: '探索' };
@@ -4615,9 +4757,40 @@ async function startRatingMatch(playerTeam, opponentTeam, opponentRating) {
 
         await new Promise(resolve => setTimeout(resolve, 1500)); // ボーナス演出全体のウェイト
 
+        // ★★★ 固有スキル発動チェック ★★★
+        const initialOvrDiff = playerBonusOvr - opponentBonusOvr;
+
+        // プレイヤーのスキル
+        const playerAttribute = ATTRIBUTES[playerTeam[playerIndex].attribute];
+        // '+'付き属性の場合、元の属性名を取得
+        const playerBaseAttributeName = playerAttribute.name.replace('+', '');
+        const playerSkill = ATTRIBUTE_UNIQUE_SKILLS[playerBaseAttributeName];
+
+        if (playerSkill && playerSkill.condition(initialOvrDiff)) {
+            await showUniqueSkillAnimation(playerCard, playerSkill.name);
+            playerBonusOvr += playerSkill.effect;
+            showStatBonusAnimation(playerCard, 'OVR', playerSkill.effect);
+        }
+
+        // 相手のスキル
+        const opponentAttribute = ATTRIBUTES[opponentTeam[opponentIndex].attribute];
+        const opponentBaseAttributeName = opponentAttribute.name.replace('+', '');
+        const opponentSkill = ATTRIBUTE_UNIQUE_SKILLS[opponentBaseAttributeName];
+
+        // 相手視点でのOVR差は符号が逆になる
+        if (opponentSkill && opponentSkill.condition(-initialOvrDiff)) {
+            await showUniqueSkillAnimation(opponentCard, opponentSkill.name);
+            opponentBonusOvr += opponentSkill.effect;
+            showStatBonusAnimation(opponentCard, 'OVR', opponentSkill.effect);
+        }
+
+        // 固有スキルが両方発動する場合を考慮して、少し待機時間を設ける
+        await new Promise(resolve => setTimeout(resolve, 1000));
         // 3. 最終的なOVRで勝敗を判定
-        const winProbability = 0.5 + (playerBonusOvr - opponentBonusOvr) * 0.01;
-        const playerWon = Math.random() < Math.max(0.05, Math.min(0.95, winProbability));
+        // OVRが高い方が必ず勝利。同値の場合はランダム。
+        const playerWon = playerBonusOvr > opponentBonusOvr 
+            ? true 
+            : (playerBonusOvr === opponentBonusOvr ? Math.random() < 0.5 : false);
 
         if (playerWon) {
             playerWins++;
@@ -4629,6 +4802,11 @@ async function startRatingMatch(playerTeam, opponentTeam, opponentRating) {
             opponentCard.style.borderColor = '#2ecc71'; // 勝利したカードの枠を緑に
         }
 
+        // 対戦済みの選手をリストから除外
+        availablePlayerIndices = availablePlayerIndices.filter(idx => idx !== playerIndex);
+        availableOpponentIndices = availableOpponentIndices.filter(idx => idx !== opponentIndex);
+
+
         // 4. ハイライト解除
         playerCard.classList.remove('fighting');
         opponentCard.classList.remove('fighting');
@@ -4638,10 +4816,14 @@ async function startRatingMatch(playerTeam, opponentTeam, opponentRating) {
         [playerCard, opponentCard].forEach(card => {
             const ovrContainer = card.querySelector('.card-ovr');
             if (ovrContainer) {
-                ovrContainer.classList.remove('bonus-active');
-                const originalOvr = ovrContainer.dataset.originalOvr;
-                ovrContainer.querySelector('.bonus-ovr-display').textContent = '';
-                ovrContainer.querySelector('.current-ovr-value').textContent = originalOvr;
+                const bonusDisplay = ovrContainer.querySelector('.bonus-ovr-display');
+                const currentOvrValueEl = ovrContainer.querySelector('.current-ovr-value');
+                if (bonusDisplay && currentOvrValueEl) {
+                    ovrContainer.classList.remove('bonus-active');
+                    const originalOvr = ovrContainer.dataset.originalOvr;
+                    bonusDisplay.textContent = '';
+                    currentOvrValueEl.textContent = originalOvr;
+                }
             }
         });
         await new Promise(resolve => setTimeout(resolve, 500)); // リセット後のウェイト
@@ -4649,7 +4831,6 @@ async function startRatingMatch(playerTeam, opponentTeam, opponentRating) {
 
     // 総合結果の判定とレート計算
     const isOverallWin = playerWins > opponentWins;
-    const playerTeamOvr = playerTeam.reduce((sum, adv) => sum + adv.peakOvr, 0);
     const opponentTeamOvr = opponentTeam.reduce((sum, adv) => sum + adv.ovr, 0);
     
     // 3. イロレーティングの計算式で勝率を予測 (OVRではなくレートを使用)
